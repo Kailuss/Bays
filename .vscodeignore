@@ -26,9 +26,3 @@ CLAUDE.md
 # Los .vsix de builds anteriores viven en la raiz; vsce empaqueta el DIRECTORIO.
 *.vsix
 
-# Non-runtime codicon extras. Only codicon.css + codicon.ttf ship — the @font-face
-# loads the .ttf and nothing references the .svg (verified against src/ and dist/).
-dist/codicons/codicon.html
-dist/codicons/codicon.csv
-dist/codicons/codicon.svg
-dist/codicons/codiconsLibrary.ts

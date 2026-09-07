@@ -34,20 +34,19 @@ const CSS_ORDER = [
 const CSS_FIRST = 'base.css';
 
 /**
- * Copia recursivamente un directorio
+ * Lo UNICO que el shell necesita de @vscode/codicons. El paquete trae ademas
+ * codicon.html (1.4 MB), codicon.svg, codicon.csv, metadata.json (124 KB) y un
+ * .ts: copiar el directorio entero los arrastra a dist/ y de ahi al .vsix.
+ *
+ * Se copian por NOMBRE y no se excluyen despues, que es la unica de las dos
+ * formas que no se pudre: una lista de exclusiones escrita una a una deja fuera
+ * siempre el SIGUIENTE fichero, y eso ya paso — `.vscodeignore` nombraba cuatro
+ * extras y se dejo `metadata.json`, que viajo en el paquete sin que nada lo
+ * dijera. Es el mismo argumento que ese fichero escribe sobre `plan*.md`.
+ *
+ * `codicon.css` referencia "./codicon.ttf", asi que los dos van al mismo sitio.
  */
-function copyDir(src, dest) {
-	fs.mkdirSync(dest, { recursive: true });
-	for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-		const srcPath = path.join(src, entry.name);
-		const destPath = path.join(dest, entry.name);
-		if (entry.isDirectory()) {
-			copyDir(srcPath, destPath);
-		} else {
-			fs.copyFileSync(srcPath, destPath);
-		}
-	}
-}
+const CODICON_FILES = ['codicon.css', 'codicon.ttf'];
 
 /** Todos los ficheros con una extensión bajo un directorio, recursivamente. */
 function sourceFiles(dir, ext, out = []) {
@@ -289,7 +288,23 @@ function copyWebviewResources() {
 	const codiconsDir = path.join(__dirname, 'node_modules', '@vscode', 'codicons', 'dist');
 	const distCodiconsDir = path.join(__dirname, 'dist', 'codicons');
 	if (fs.existsSync(codiconsDir)) {
-		copyDir(codiconsDir, distCodiconsDir);
+		// El destino se VACIA primero: todo checkout anterior a esto tiene ahi los
+		// cinco extras de cuando se copiaba el directorio entero, y vsce empaqueta
+		// lo que encuentre en dist/ — sin barrerlos seguirian viajando.
+		fs.rmSync(distCodiconsDir, { recursive: true, force: true });
+		fs.mkdirSync(distCodiconsDir, { recursive: true });
+		for (const name of CODICON_FILES) {
+			const from = path.join(codiconsDir, name);
+			if (fs.existsSync(from)) {
+				fs.copyFileSync(from, path.join(distCodiconsDir, name));
+			} else {
+				// La misma clase de fallo que una hoja que falta: el shell los enlaza
+				// por URI, asi que uno ausente falla en EJECUCION como un 404 dentro
+				// del webview — todos los glifos del panel fuera, con el build verde.
+				console.error(`[build] codicon asset not found: ${from}`);
+				process.exitCode = 1;
+			}
+		}
 	} else {
 		console.error('[build] @vscode/codicons/dist is missing: the panel would draw no codicon at all');
 		process.exitCode = 1;
