@@ -56,7 +56,11 @@ export class IconRenderer {
     if (tabType === 'webview' || (!uri && !originalUri)) {
       const lookup = lookupWebviewExtensionIcon(viewType, label);
       if (lookup.state === 'loaded') {
-        return { html: lookup.dataUri, pending: null };
+        // Envuelto y no pelado: aguas abajo esto va a `keyForHtml`, que lo mete
+        // en la fila tal cual. `iconMarkerToHtml` VALIDA el `data:` URI antes de
+        // interpolarlo, que es lo que pide un valor sacado del manifiesto de una
+        // extensión de terceros.
+        return { html: iconMarkerToHtml(lookup.dataUri), pending: null };
       }
       return {
         html    : codiconHtml(resolveBuiltInCodicon(label, viewType), BUILTIN_ICON_COLOR),
@@ -88,7 +92,7 @@ export class IconRenderer {
     if (request.kind === 'webview') {
       try {
         const dataUri = await resolveWebviewExtensionIconAsync(request.viewType, request.label);
-        if (dataUri) { return dataUri; }
+        if (dataUri) { return iconMarkerToHtml(dataUri); }
       } catch (error) {
         Logger.error(`[Bays] Deferred extension icon failed for ${request.label}`, error);
       }
