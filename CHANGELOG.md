@@ -8,6 +8,22 @@ Release channel: an **odd** minor (0.3, 0.5, ...) ships through the marketplace'
 derives the flag from the version in the manifest, so there is nothing to
 remember at publish time.
 
+## [0.4.1] - 2026-09-07
+
+### Changed
+- New extension icon.
+- The extension is published as `Lovervoid.bays`, alongside Atria and Dark Mode
+  Lover.
+- The build copies the two codicon files the panel loads instead of copying the
+  package's `dist/` whole and excluding the rest afterwards. The four exclusions
+  written one by one had missed `metadata.json`, which shipped: 124 KB read by
+  nothing. The package is 157.93 KB, down from 176.17 KB.
+
+### Removed
+- AI and agent documentation is no longer tracked by git. It stays on disk,
+  which is where it is useful, and `check-layers` cuts if any of it reaches the
+  index.
+
 ## [0.4.0] - 2026-09-04
 
 ### Changed
