@@ -1,4 +1,5 @@
 import { iconMarkerToHtml, placeholderIconHtml } from '../../utils/iconHtml';
+import { Logger } from '../../platform/logger';
 
 /**
  * Le da a cada icono una clave corta y estable, para que su HTML viaje UNA vez
@@ -40,6 +41,15 @@ export class IconKeyRegistry {
    * tema, que nunca empieza así.
    */
   keyForHtml(html: string): string {
+    // Lo que entra aquí va a la fila TAL CUAL, así que tiene que ser markup: una
+    // rama que devuelva su valor pelado en vez de envolverlo escribe ese valor
+    // sobre el título de la bay, y el tipo es `string` por los dos lados, así
+    // que el compilador no tiene nada que decir. Ya pasó una vez, con el `data:`
+    // URI del logo de un webview. Un icono genérico es la dirección segura.
+    if (!html.startsWith('<')) {
+      Logger.error(`[Bays] Icon HTML is not markup, falling back: ${html.slice(0, 40)}`);
+      return this.keyForHtml(placeholderIconHtml());
+    }
     return this.mint(`@html:${html}`, () => html);
   }
 
