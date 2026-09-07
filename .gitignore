@@ -9,6 +9,32 @@ node_modules
 # se queda fuera es siempre el SIGUIENTE.
 [Pp]lan*.md
 
-# Lo demas de la documentacion SI se versiona. CLAUDE.md es lo primero que se lee
-# al empezar una sesion: sin trackear se pierde con un `git clean`, no se revisa
-# en un PR y no hay forma de ver cuando dejo de ser verdad.
+# La documentacion de IA y de agentes se queda EN LOCAL y no viaja a GitHub: es
+# de esta maquina y no del proyecto, asi que a quien clona el repositorio para
+# leer el codigo no le sirve de nada y ahi envejece sin que la lea nadie.
+#
+# Lo que cuesta hay que decirlo, porque es real: sin trackear, un `git clean -x`
+# se la lleva, no se revisa en un PR y no queda historia de cuando dejo de ser
+# verdad. La copia buena es la de disco.
+#
+# Y no basta con ignorarlas: `.gitignore` no saca lo que YA estaba trackeado y no
+# alcanza un `git add -f`. Quien lo hace cumplir es `checkNoAgentDocs`, en
+# scripts/check-layers.js, que corta si alguna esta en el indice.
+CLAUDE.md
+CLAUDE.*.md
+AGENT.md
+AGENTS.md
+GEMINI.md
+.claude/
+.cursor/
+.cursorrules
+.continue/
+.aider*
+.windsurfrules
+.clinerules
+.github/copilot-instructions.*
+.github/instructions/
+.github/prompts/
+.github/chatmodes/
+.mcp.json
+mcp.json

@@ -18,6 +18,13 @@ const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
 const L10N = path.join(ROOT, 'l10n');
 
+/**
+ * La guia interna. NO viaja a GitHub: es documentacion para un agente y se queda
+ * en local (ver `checkNoAgentDocs`), asi que en un clon limpio no esta y todo lo
+ * que se apoye en ella tiene que saber vivir sin ella.
+ */
+const GUIDE = 'CLAUDE.md';
+
 let failures = 0;
 
 function fail(message) {
@@ -316,10 +323,6 @@ const NOT_OURS = new Set([
 	'PreviewService',
 	// De VS CODE, no nuestro: el error que salta al fabricar una uri falsa.
 	'UriError',
-	// Los dos que sobrevivieron a una limpieza de la prosa porque la regla vieja
-	// exigia que TODO el backtick fuese un identificador. La guia los nombra como
-	// el ejemplo de por que la de hoy mira dentro del tramo.
-	'RenderBlock', 'revealInExplorerView',
 	// Ajustes que la documentacion vieja listaba y que NO existieron nunca. La
 	// guia los nombra para que nadie vuelva a documentarlos.
 	'tabHeight', 'iconSize', 'enableStateIndicators', 'showStateIcons',
@@ -428,6 +431,17 @@ function checkCitedIdentifiers() {
 	// vive en un script del build, que es parte del corpus, así que cada nombre
 	// exceptuado se encontraba a sí mismo y esta comprobación no podía fallar
 	// nunca. Es el mismo agujero que el de los comentarios, un fichero más allá.
+	//
+	// Y solo se puede preguntar con la GUIA delante: NOT_OURS existe para lo que
+	// cita la guia, que es local y no viaja a GitHub, asi que en un clon limpio no
+	// hay ningun documento que las cite y salen todas a la vez como muertas. Se
+	// salta EN VOZ ALTA, que es lo unico que impide que un check que no corre se
+	// convierta en un check que nadie echa de menos.
+	if (!fs.existsSync(path.join(ROOT, GUIDE))) {
+		console.log(`[check-layers] no ${GUIDE} here, so the NOT_OURS reverse check did not run: it only says anything against the guide`);
+		return;
+	}
+
 	const prose = docs(ROOT).map(read).join('\n');
 	const code = everything.replace(/const NOT_OURS = new Set\(\[[\s\S]*?\]\);/, '');
 	for (const name of NOT_OURS) {
@@ -608,6 +622,54 @@ function checkBundles() {
 	}
 }
 
+//= 9. NADA DE DOCUMENTACION DE IA NI DE AGENTES EN GIT
+//
+// Lo que un agente lee para trabajar aqui es de ESTA maquina y no del proyecto:
+// la guia interna, las instrucciones de un asistente, la configuracion de un
+// servidor MCP. Trackeado, viaja a GitHub, donde no le sirve a nadie que venga a
+// leer el codigo y donde envejece sin que lo lea nadie.
+//
+// Lo que se afirma es que no esten TRACKEADOS, NO que no existan: en disco son
+// justo lo que hace falta para trabajar, y este propio fichero los nombra.
+//
+// Cortar aqui y no dejarlo en `.gitignore` es la diferencia entre una regla y
+// una costumbre: un `git add -f`, un fichero que ya estaba trackeado antes de
+// ignorarlo —que `.gitignore` no saca— y un nombre nuevo que la lista no
+// nombraba entran igual, y ninguna de las tres se ve en una revision.
+const AGENT_DOCS = [
+	// La guia de este repo y las de los demas asistentes.
+	/^CLAUDE(\.[\w-]+)?\.md$/i,
+	/^AGENTS?\.md$/i,
+	/^GEMINI\.md$/i,
+	/(^|\/)\.?(cursorrules|windsurfrules|clinerules|aiderrules)$/i,
+	// Los directorios que cada uno se trae.
+	/^\.(claude|cursor|continue|aider|codeium|windsurf)\//i,
+	/^\.github\/(copilot-instructions|instructions\/|prompts\/|chatmodes\/)/i,
+	// Un servidor MCP es de la maquina que lo lanza, y sus cabeceras suelen
+	// llevar una clave dentro.
+	/(^|\/)\.?mcp\.json$/i,
+];
+
+function checkNoAgentDocs() {
+	let tracked;
+	try {
+		tracked = require('child_process')
+			.execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' })
+			.split('\0').filter(Boolean);
+	} catch {
+		// Sin indice no hay nada que afirmar: un tarball no lo tiene. Se dice, por
+		// lo mismo que la mitad inversa de la comprobacion de citas.
+		console.log('[check-layers] no git index here, so the agent-doc check did not run');
+		return;
+	}
+
+	for (const file of tracked) {
+		if (AGENT_DOCS.some(pattern => pattern.test(file))) {
+			fail(`"${file}" is agent documentation and git tracks it: it belongs on this machine and not on GitHub. \`git rm --cached\` it and name it in .gitignore, which leaves it on disk`);
+		}
+	}
+}
+
 checkFolders();
 checkCommands();
 checkSettings();
@@ -616,9 +678,10 @@ checkCitedIdentifiers();
 checkTrustBoundary();
 checkWebviewContract();
 checkBundles();
+checkNoAgentDocs();
 
 if (failures > 0) {
 	console.error(`[check-layers] ${failures} problem(s)`);
 	process.exit(1);
 }
-console.log('[check-layers] folders, command ids, settings keys, disposal, cited identifiers, the trust boundary, the webview contract and the l10n bundles all hold');
+console.log('[check-layers] folders, command ids, settings keys, disposal, cited identifiers, the trust boundary, the webview contract, the l10n bundles and the absence of agent docs from git all hold');
