@@ -611,8 +611,12 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
    * o el nombre de la primera carpeta, o 'No Folder'.
    */
   private getWorkspaceName(): string {
+    // El esquema y no solo la presencia: un workspace SIN GUARDAR lleva un
+    // `workspaceFile` con esquema `untitled:` cuya ruta es una marca de tiempo,
+    // así que sin mirarlo la cabecera dice un número. Ahí cae al nombre de la
+    // primera carpeta, que es lo que VS Code enseña.
     const wsFile = vscode.workspace.workspaceFile;
-    if (wsFile) {
+    if (wsFile && wsFile.scheme !== 'untitled') {
       const base = wsFile.path.split('/').pop() ?? '';
       return base.replace(/\.code-workspace$/i, '') || 'Workspace';
     }
