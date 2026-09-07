@@ -7,6 +7,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.3] - 2026-09-08
+
+### Fixed
+
+- A webview bay drew the base64 `data:` URI of its owning extension's logo as
+  text over the row's title. It now goes through the same wrapper the file rows
+  use, which validates the URI before it reaches the row.
+- The header named an unsaved workspace with a timestamp. An untitled workspace
+  file carries no name to read, so the header falls back to the name of the
+  first folder, which is what VS Code shows.
+
 ## [0.4.2] - 2026-09-07
 
 ### Changed
