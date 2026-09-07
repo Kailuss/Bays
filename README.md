@@ -1,126 +1,100 @@
-# Bays 💙
+# **Every open file, down the side.**
 
-**Your open editors, beautifully organized in the sidebar.**
+The tab bar works until it doesn't. Open a dozen files and the tabs shrink, then scroll, then start hiding the one you want behind a chevron.
 
-Bays replaces VS Code's horizontal editor-tab bar with a clean, vertical list of "bays" in the sidebar. All your open files in one elegant panel: no more horizontal scrolling or lost tabs.
+**Bays puts your open editors in a vertical list in the sidebar**, where a name stays readable however many of them there are.
 
-## 🚀 Getting Started
+## A list you can actually read
 
-1. **Install** the extension from the VS Code Marketplace
-2. **Open** the Bays panel from the Activity Bar (look for the Bays icon on the left)
-3. **Enjoy** your organized bays!
+Every open editor gets a row: its name, and the folder it lives in underneath.
 
-That's it. No configuration needed: it works great out of the box.
+- **Real icons**: from whichever file icon theme you already use.
+- **State on the row that owns it**: unsaved dots, Git status, errors and warnings.
+- **The active file**: highlighted, always.
+- **Compact mode**: name and path on one line, when you would rather see more rows.
 
-## ✨ What You Get
+## Actions where the file already is
 
-### 📋 Clean Vertical Layout
-- All your documents in one sidebar panel
-- File name and path on separate lines for easy scanning (or a single line in compact mode)
-- Real icons from your active file-icon theme (Material Icons, Seti, vscode-icons…)
-- Visual highlight on your active file, dirty dots, and git/diagnostic badges
+Hover a bay and its actions appear. While you are only reading, none of them are on screen.
 
-### 🎯 Quick Actions on Hover
-- **Pin** important files to keep them at the top
-- **Close** bays without hunting for tiny X buttons
-- **Add to Copilot Chat** for AI assistance with your code
-- **Smart file actions** tailored to the file type (preview, run, format…)
-- Everything appears on hover: no clutter when you don't need it
+- **Pin** the files you keep coming back to, and they stay at the top.
+- **Close** without aiming at a small target.
+- **Add to Copilot Chat** straight from the row.
+- **Do what the file does**: preview a Markdown, an image or a CSV, run a test or a script, format a JSON, send an `.http` request, open a PDF in the app that owns it.
 
-### 🔍 Native-Style Right-Click Menu
-A hand-built context menu that matches VS Code's own, placed right under your cursor, with submenus, keyboard navigation and type-ahead:
-- Close, Close Others, Close to the Right, Close Group
-- Reveal in Explorer view or in the OS file manager
-- Copy relative path, absolute path, or file contents
-- Compare with the active editor, Open Changes, Split Right
-- Open Timeline, Duplicate File, Move to New Window
-- Add to Copilot Chat
+## A menu that matches the editor's own
 
-### 🎨 Smart File Actions
-Contextual actions that appear based on the file type:
-- **Preview** Markdown, HTML, images, and CSV files
-- **Run** tests, Python scripts, and shell commands
-- **Open** external files (PDFs, videos, etc.) in their native apps
-- **Format** JSON, CSS, and YAML files
-- **Optimize** SVG files and compile SCSS/Less
-- **Send** HTTP requests from `.http` files
+Right-click gives you a context menu built to VS Code's own shape: it opens under the cursor, with submenus, keyboard navigation and type-ahead.
 
-### 👥 Multi-Group Support with Group Customization
-When you split your editor, Bays groups your bays automatically and gives each group its own header. You can make each group your own:
-- **Rename** a group to whatever you like
-- **Color-code** groups: blue, green, yellow, orange, red or purple, all theme-aware
-- **Lock** a group to protect it from accidental closes
-- **Collapse** a group's header to tuck its bays away
+- Close, close others, close to the right, close the group.
+- Reveal in the Explorer view, or in the system file manager.
+- Copy the relative path, the absolute path, or the contents.
+- Compare with the active editor, open changes, split right.
+- Open the timeline, duplicate the file, move it to a new window.
 
-### 🤖 First-Class Claude Code Support
-Claude Code conversation tabs get their real branding and their **full** conversation title: Bays reads the live title straight from Claude's transcripts, so you always see the whole thing instead of VS Code's truncated `Conversation with…`. Plan-preview tabs are recognized too.
+## Groups, when you split
 
-### 🔄 Variants (Diffs, Snapshots & Comparisons)
-Diffs, staged changes, snapshots, and comparisons are shown indented as **variants** under their source bay, so reviewing multiple versions of the same file stays tidy. The parent tracks how many variants it has.
+Split the editor and Bays gathers each group under a heading of its own.
 
-### 🧭 Rename, Move & Delete: Always in Sync
-Rename a file, move it, drag a folder, or delete it, and your open bays follow along automatically. No stale paths, no ghost entries.
+- **Rename** a group to what it actually is.
+- **Colour** it blue, green, yellow, orange, red or purple, all from your theme.
+- **Lock** it so nothing closes by accident.
+- **Fold** it away while you work somewhere else.
 
-### 🎯 Cursor Position Sync (Experimental)
-Synchronize cursor position between a bay and its variants (diffs/snapshots). When enabled, moving your cursor in one view updates the related views to the same line and column. Perfect for comparing changes at a specific location.
+## Diffs sit under the file they came from
 
-*Enable with:* `"bays.syncCursorPosition": true` (default: off)
+A diff, a staged change, a snapshot or a comparison is drawn indented under its source, as a variant of it.
 
-## Requirements
+Three versions of one file stay one entry with three rows beneath it, and the parent says how many it has.
 
-- VS Code **1.85.0** or later
+## Claude Code conversations keep their name
 
-## ⚙️ Customize It Your Way
+A Claude Code tab gets its own branding and its **whole** title, read from the live transcript instead of the truncated `Conversation with...` VS Code shows. Plan previews are recognised too.
 
-Open VS Code Settings (`Ctrl+,` / `Cmd+,`) and search for "Bays":
+## It follows your files
 
-- **`bays.showFilePath`**: Show the relative file path under each bay
-  *Default: On*
+Rename a file, move it, drag a folder or delete it, and the open bays follow.
 
-- **`bays.compactMode`**: Compact single-line rows with reduced height (28px)
-  *Default: Off*
+No stale paths, and no rows pointing at something that is no longer there.
 
-- **`bays.enableHoverActions`**: Show the file/Copilot/close buttons on hover
-  *Default: On*
+## Make the list yours
 
-- **`bays.enableDragDrop`**: Reorder bays by dragging, within and across groups
-  *Default: On*
+| Setting | What it does | Default |
+|---|---|---|
+| `bays.showFilePath` | The folder under each name | On |
+| `bays.compactMode` | One line per bay, at reduced height | Off |
+| `bays.enableHoverActions` | The buttons that appear on hover | On |
+| `bays.enableDragDrop` | Reorder by dragging, within a group and across groups | On |
+| `bays.animations` | Everything the view moves. `workbench.reduceMotion` turns it off too | On |
+| `bays.followProductIconTheme` | Draw the panel's glyphs with your product icon theme | On |
+| `bays.syncCursorPosition` | Hold the cursor at the same line in a bay and its variants | Off |
 
-- **`bays.syncCursorPosition`**: Synchronize the cursor between a bay and its variants
-  *Default: Off*
+The toolbar carries a **View Options** menu for the two you flip most, and a **Save All** button that appears only while something is unsaved.
 
-> 💡 The toolbar at the top of the Bays view has a **View Options** menu (the gear) with quick toggles for compact mode and file paths, plus a **Save All** button that appears whenever you have unsaved changes.
+## A few things worth knowing
 
-## 🎮 Quick Commands
+Bays has a few deliberate boundaries:
 
-Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type "Bays":
+- **Cursor position sync is experimental**, and off until you ask for it.
+- A webview cannot cross the application boundary: nothing can be dragged in from outside VS Code.
+- Bays shows what the editor has open. It is not a file browser.
 
-- **Refresh**: Reload the bay list if something looks off
-- **Save All**: Save every unsaved file
-- **Close All**: Clear all open editors at once
-- **Toggle Compact Mode** / **Toggle View Path**: Flip the layout toggles
-- **Add Files to Copilot Chat…**: Pick multiple files to discuss with AI
+## Getting started
 
-Most per-bay and per-group actions are a right-click away in the bay list!
+Click the **Bays** icon in the Activity Bar.
 
-## 🛠️ For Developers
+Your open editors are already in it. There is nothing to configure.
 
-Want to contribute or customize Bays? Start with:
+Settings use the `bays.` prefix: filter for `@ext:Lovervoid.bays`.
 
-- [`CLAUDE.md`](CLAUDE.md): the whole internal guide (in Spanish). The model, the
-  update loop, the invariants and the cases this codebase learned the hard way.
-  It is the only one: five overlapping layers of prose were merged into it,
-  because the same fact written in five places goes stale in four of them.
+Requires VS Code **1.85** or later.
 
-**Quick start:**
-```bash
-npm install
-npm run watch    # parallel esbuild + tsc --watch
-# Press F5 to launch the Extension Development Host
-```
+## Why Bays?
 
-Useful scripts: `npm run check-types` (fast correctness gate), `npm run lint`, `npm run compile` (one-shot dev build), `npm run package` (production build), `npm test`.
+Because the tab bar runs out of room and the sidebar does not.
 
-## License
+**Every file you have open. Readable. In one column.**
 
-MIT
+Questions and bug reports: the **Q&A** tab on this listing.
+
+MIT License.

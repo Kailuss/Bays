@@ -1,16 +1,16 @@
-# Change Log
+# Changelog
 
-Format: [Keep a Changelog](http://keepachangelog.com/). Categories are Added,
-Changed, Fixed and Removed.
+All notable changes to Bays.
 
-Release channel: an **odd** minor (0.3, 0.5, ...) ships through the marketplace's
-**pre-release** channel and an even one is a stable release. `npm run vsix`
-derives the flag from the version in the manifest, so there is nothing to
-remember at publish time.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
+channel; even ones are stable releases.
 
 ## [0.4.1] - 2026-09-07
 
 ### Changed
+
 - New extension icon.
 - The extension is published as `Lovervoid.bays`, alongside Atria and Dark Mode
   Lover.
@@ -20,6 +20,7 @@ remember at publish time.
   nothing. The package is 157.93 KB, down from 176.17 KB.
 
 ### Removed
+
 - AI and agent documentation is no longer tracked by git. It stays on disk,
   which is where it is useful, and `check-layers` cuts if any of it reaches the
   index.
@@ -27,6 +28,7 @@ remember at publish time.
 ## [0.4.0] - 2026-09-04
 
 ### Changed
+
 - The documentation is now a single `CLAUDE.md`, in Spanish. Five overlapping
   layers (a root Copilot agent, one `AGENT.md` per folder, `ARCHITECTURE.md` and
   a `docs/` guide) held 7598 lines that stated the same facts up to five times,
@@ -43,6 +45,7 @@ remember at publish time.
   half could never fail, and 21 of its 86 entries were stale.
 
 ### Added
+
 - Localization. Every visible string goes through `vscode.l10n.t` in the host
   and through a client-side `t()` fed by a bundle the shell injects as
   `window.__l10n`; `contributes` moved to `%key%` placeholders. Spanish and
@@ -70,6 +73,7 @@ remember at publish time.
   `galleryBanner`.
 
 ### Changed
+
 - Values read from a third-party icon theme (colour, font size, codepoint, data
   URI, font format, weight and style) are validated against a whitelist before
   reaching the webview instead of being interpolated as they arrive.
@@ -83,6 +87,7 @@ remember at publish time.
   new message cannot compile without an owner.
 
 ### Fixed
+
 - Documentation citing `src/webview/contextmenu.js`, `webview.js`, `dragdrop.js`
   and `pathTruncation.js` months after the client became TypeScript.
 - `getStateIndicator` was dynamically imported on the single-bay update path.
@@ -90,17 +95,20 @@ remember at publish time.
 ## [0.3.7] - 2026-07-24
 
 ### Added
+
 - Real test suites for id generation, native-tab matching, diff classification
   and path formatting, plus an activation smoke test.
 - Type-aware lint (promise rules) and a CI workflow running type-check, lint,
   production build and tests.
 
 ### Changed
+
 - The packaged VSIX drops the non-runtime codicon extras.
 
 ## [0.3.6] - 2026-07-24
 
 ### Added
+
 - Per-group rename, colour, lock and collapse, persisted per workspace.
 - Bays follow a file through rename, move and delete.
 - First-class Claude Code support: the full conversation title read from the
@@ -112,6 +120,7 @@ remember at publish time.
   map by language stop falling back to the generic file icon.
 
 ### Changed
+
 - The host to webview contract is a single typed protocol, with the host
   dispatching through an exhaustive handler table.
 - The webview client is TypeScript bundled by esbuild instead of scripts copied
@@ -122,6 +131,7 @@ remember at publish time.
 - All state-mutating sync runs through a single promise queue.
 
 ### Fixed
+
 - Font-based icon themes rendered empty boxes.
 - Variants attached to a phantom parent, and diff ids that did not survive a
   close.
@@ -133,5 +143,6 @@ remember at publish time.
 ## [0.3.4] - 2026-02-23
 
 ### Added
+
 - Cursor position synchronization between a bay and its variants, behind
   `bays.syncCursorPosition` (off by default).
