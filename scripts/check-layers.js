@@ -314,8 +314,6 @@ const NOT_OURS = new Set([
 	// RETIRADO a propósito, y la prosa lo NOMBRA a propósito: el argumento de lo
 	// que hay hoy es la forma a la que sustituyó, o la que nunca existió.
 	'PreviewService',
-	// De la extension HERMANA, no de esta: el publisher de Atria.
-	'Lovervoid',
 	// De VS CODE, no nuestro: el error que salta al fabricar una uri falsa.
 	'UriError',
 	// Los dos que sobrevivieron a una limpieza de la prosa porque la regla vieja

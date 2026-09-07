@@ -26,7 +26,7 @@ leen mejor en el código.
 
 ## Qué es
 
-Extensión de VS Code (`Kailuss.bays`, pide VS Code ≥ 1.85). Sustituye la barra
+Extensión de VS Code (`Lovervoid.bays`, pide VS Code ≥ 1.85). Sustituye la barra
 horizontal de pestañas por una **lista vertical de «bays»** —los editores
 abiertos— dibujada dentro de un `WebviewView` en la barra lateral, con grupos,
 variantes y estado de git. Se activa en `onStartupFinished`.

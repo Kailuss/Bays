@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 
 suite('Extension activation', () => {
 	test('the extension is present and activates', async () => {
-		const ext = vscode.extensions.getExtension('Kailuss.bays');
-		assert.ok(ext, 'extension Kailuss.bays not found in the test host');
+		const ext = vscode.extensions.getExtension('Lovervoid.bays');
+		assert.ok(ext, 'extension Lovervoid.bays not found in the test host');
 		await ext.activate();
 		assert.strictEqual(ext.isActive, true);
 	});
