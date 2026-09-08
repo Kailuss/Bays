@@ -1,8 +1,9 @@
 import * as vscode         from 'vscode';
-import * as path           from 'path';
 import { BayStateService } from '../core/BayStateService';
 import type { GitStatus }  from '../../models/Bay';
-import type { GitApi, GitChange, GitExtensionExports, GitRepository } from './gitApiTypes';
+import type { GitApi, GitExtensionExports, GitRepository } from './gitApiTypes';
+import { buildGitIndex, isPathInsideRepo, normalizeFsPath } from '../../utils/gitIndex';
+import type { GitStatus as IndexedStatus } from '../../models/BayTypes';
 
 /**
  * Encapsula toda la sincronización con Git (status + listeners de repositorio).
@@ -12,6 +13,17 @@ export class GitSyncService {
   private _gitApi                      : GitApi | null = null;
   private _gitRepoListeners            = new Map<string, vscode.Disposable>();
   private _gitOpenRepoListenerAttached = false;
+
+  /**
+   * Each repository's state indexed by path, keyed by normalised root.
+   *
+   * Built LAZILY, on the first question that arrives after that repository
+   * reports, and dropped when it reports again. Its freshness is exactly that of
+   * the event the repaint already hangs off (`repo.state.onDidChange`): an index
+   * staler than that would be a badge staler than that, and the badge would
+   * already be so.
+   */
+  private _indexByRepo = new Map<string, ReadonlyMap<string, IndexedStatus>>();
 
   constructor(private stateService: BayStateService) {}
 
@@ -93,59 +105,71 @@ export class GitSyncService {
     context.subscriptions.push(...this.disposables);
   }
 
+  /**
+   * A file's git state: one lookup in the index of the repository holding it.
+   *
+   * The call is one per tab — converting a native tab, and once more per bay
+   * whenever the repository reports — so what it costs has to stay flat in the
+   * number of changes. The scan over the three lists lives in `buildGitIndex`,
+   * which runs once per repository event instead.
+   */
   getGitStatus(uri: vscode.Uri): GitStatus {
     try {
-      const targetPath = this.normalizeFsPath(uri.fsPath);
+      const targetPath = normalizeFsPath(uri.fsPath);
       if (!targetPath) { return null; }
 
-      if (!this._gitApi) { this._gitApi = this.resolveGitApi(); }
-      if (!this._gitApi || this._gitApi.repositories.length === 0) { return null; }
+      const repo = this.repoFor(targetPath);
+      if (!repo) { return null; }
 
-
-      // Pick the MOST SPECIFIC repository: a file inside a submodule/nested repo
-      // is prefix-"inside" both the parent and the inner root, so returning from
-      // the first prefix match (parent, whose change lists never contain inner
-      // files) would report null forever. The longest matching root is the repo
-      // that actually tracks the file.
-      let bestRepo: GitRepository | null = null;
-      let bestRootLen = -1;
-      for (const repo of this._gitApi.repositories) {
-        const repoRoot = this.normalizeFsPath(repo?.rootUri?.fsPath);
-        if (!repoRoot || !this.isPathInsideRepo(targetPath, repoRoot)) { continue; }
-        if (repoRoot.length > bestRootLen) {
-          bestRootLen = repoRoot.length;
-          bestRepo = repo;
-        }
-      }
-
-      if (bestRepo) {
-        const mergeChanges = bestRepo.state.mergeChanges || [];
-        const hasMergeConflict = mergeChanges.some(c => this.changeMatchesPath(c, targetPath));
-        if (hasMergeConflict) {
-          return 'conflict';
-        }
-
-        const indexChanges = bestRepo.state.indexChanges || [];
-        const indexChange = indexChanges.find(c => this.changeMatchesPath(c, targetPath));
-
-        const workingTreeChanges = bestRepo.state.workingTreeChanges || [];
-        const workingChange = workingTreeChanges.find(c => this.changeMatchesPath(c, targetPath));
-
-        const indexStatus = this.mapGitApiStatus(indexChange?.status);
-        const workingStatus = this.mapGitApiStatus(workingChange?.status);
-
-        if (indexStatus === 'added' && workingStatus === 'modified') {
-          return 'modified';
-        }
-
-        const finalStatus = workingStatus ?? indexStatus ?? null;
-        return finalStatus;
-      }
+      return this.indexFor(repo)?.get(targetPath) ?? null;
     } catch {
       // Silently fail if git is not available
+      return null;
     }
+  }
 
-    return null;
+  /**
+   * The MOST SPECIFIC repository containing the path.
+   *
+   * A file inside a submodule is prefix-"inside" both the parent and the inner
+   * root, and the parent's change lists never contain inner files: returning
+   * from the first prefix match would report that file as clean forever. The
+   * longest matching root is the repo that actually tracks it. This walks
+   * REPOSITORIES, of which there are a handful, never changes.
+   */
+  private repoFor(targetPath: string): GitRepository | null {
+    if (!this._gitApi) { this._gitApi = this.resolveGitApi(); }
+    if (!this._gitApi || this._gitApi.repositories.length === 0) { return null; }
+
+    let best: GitRepository | null = null;
+    let bestRootLen = -1;
+    for (const repo of this._gitApi.repositories) {
+      const repoRoot = normalizeFsPath(repo?.rootUri?.fsPath);
+      if (!repoRoot || !isPathInsideRepo(targetPath, repoRoot)) { continue; }
+      if (repoRoot.length > bestRootLen) {
+        bestRootLen = repoRoot.length;
+        best = repo;
+      }
+    }
+    return best;
+  }
+
+  /** A repository's index, built the first time it is asked for. */
+  private indexFor(repo: GitRepository): ReadonlyMap<string, IndexedStatus> | null {
+    const repoRoot = normalizeFsPath(repo?.rootUri?.fsPath);
+    if (!repoRoot) { return null; }
+
+    const cached = this._indexByRepo.get(repoRoot);
+    if (cached) { return cached; }
+
+    const built = buildGitIndex(repo.state);
+    this._indexByRepo.set(repoRoot, built);
+    return built;
+  }
+
+  /** A repository reporting invalidates its own index, and only its own. */
+  private invalidateIndex(repoRoot: string | null): void {
+    if (repoRoot) { this._indexByRepo.delete(repoRoot); }
   }
 
   dispose(): void {
@@ -153,6 +177,7 @@ export class GitSyncService {
     this.disposables = [];
     this._gitRepoListeners.forEach(sub => sub.dispose());
     this._gitRepoListeners.clear();
+    this._indexByRepo.clear();
     this._gitOpenRepoListenerAttached = false;
   }
 
@@ -184,7 +209,7 @@ export class GitSyncService {
   }
 
   private attachGitRepoListener(repo: GitRepository): void {
-    const repoRoot = this.normalizeFsPath(repo?.rootUri?.fsPath);
+    const repoRoot = normalizeFsPath(repo?.rootUri?.fsPath);
     if (!repoRoot) {
       return;
     }
@@ -193,6 +218,9 @@ export class GitSyncService {
     }
 
     const sub = repo.state.onDidChange(() => {
+      // The index is dropped BEFORE the repaint: the other way round, every bay
+      // would read the stale index and the repaint would change nothing.
+      this.invalidateIndex(repoRoot);
       this.updateGitStatusForRepo(repo);
     });
     this._gitRepoListeners.set(repoRoot, sub);
@@ -206,13 +234,16 @@ export class GitSyncService {
    * stage/unstage/commit events never refresh git badges until a full restart.
    */
   private detachGitRepoListener(repo: GitRepository): void {
-    const repoRoot = this.normalizeFsPath(repo?.rootUri?.fsPath);
+    const repoRoot = normalizeFsPath(repo?.rootUri?.fsPath);
     if (!repoRoot) { return; }
     const sub = this._gitRepoListeners.get(repoRoot);
     if (sub) {
       sub.dispose();
       this._gitRepoListeners.delete(repoRoot);
     }
+    // Reopening it hands back a NEW object, so an index kept under that root
+    // would be the previous repository's, with nothing left to drop it.
+    this.invalidateIndex(repoRoot);
   }
 
   /**
@@ -238,6 +269,11 @@ export class GitSyncService {
   }
 
   private refreshAllGitStatuses(): void {
+    // Called by bootstrap and by an extension change, neither of which goes
+    // through any repository's event: without this, whatever was indexed before
+    // git finished scanning would stay put.
+    this._indexByRepo.clear();
+
     for (const bay of this.stateService.getAllBays()) {
       const uri = bay.metadata.uri;
       if (!uri) { continue; }
@@ -251,14 +287,14 @@ export class GitSyncService {
   }
 
   private updateGitStatusForRepo(repo: GitRepository): void {
-    const repoRoot = this.normalizeFsPath(repo?.rootUri?.fsPath);
+    const repoRoot = normalizeFsPath(repo?.rootUri?.fsPath);
     if (!repoRoot) { return; }
 
     for (const bay of this.stateService.getAllBays()) {
       const uri = bay.metadata.uri;
       if (!uri) { continue; }
-      const targetPath = this.normalizeFsPath(uri.fsPath);
-      if (!targetPath || !this.isPathInsideRepo(targetPath, repoRoot)) { continue; }
+      const targetPath = normalizeFsPath(uri.fsPath);
+      if (!targetPath || !isPathInsideRepo(targetPath, repoRoot)) { continue; }
 
       const newGitStatus = this.getGitStatus(uri);
 
@@ -267,49 +303,5 @@ export class GitSyncService {
         this.stateService.updateBayStateWithAnimation(bay);
       }
     }
-  }
-
-  private mapGitApiStatus(status: number | undefined): GitStatus {
-    switch (status) {
-      case 7: return 'untracked';
-      case 1:
-      case 9: return 'added';
-      case 0:
-      case 3:
-      case 4:
-      case 5:
-      case 10:
-      case 11:
-        return 'modified';
-      case 2:
-      case 6: return 'deleted';
-      case 8: return 'ignored';
-      case 12:
-      case 13:
-      case 14:
-      case 15:
-      case 16:
-      case 17:
-      case 18:
-        return 'conflict';
-      default:
-        return status === undefined ? null : 'modified';
-    }
-  }
-
-  private changeMatchesPath(change: GitChange, targetPath: string): boolean {
-    const current = this.normalizeFsPath(change?.uri?.fsPath);
-    const original = this.normalizeFsPath(change?.originalUri?.fsPath);
-    return current === targetPath || original === targetPath;
-  }
-
-  private isPathInsideRepo(filePath: string, repoRoot: string): boolean {
-    return filePath === repoRoot || filePath.startsWith(`${repoRoot}${path.sep}`);
-  }
-
-  private normalizeFsPath(fsPath: string | undefined): string | null {
-    if (!fsPath) { return null; }
-    const normalized = path.normalize(fsPath);
-    return path.sep === '\\' ? normalized.toLowerCase() : normalized;
   }
 }
