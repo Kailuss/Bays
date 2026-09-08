@@ -70,6 +70,18 @@
   background: var(--vscode-list-inactiveSelectionBackground, #37373d66);
 }
 
+/* And its NAME keeps the weight of a selected row, which is what makes the pair
+   readable once the variant is the one wearing the active colour: the parent
+   stays MARKED and the variant is the one you are in. Without it, selecting a
+   variant left its file's name at the same weight as every other row of the
+   list, so which file the diff belonged to had to be worked out from an indent.
+
+   Only the weight. The colour is left where the cascade leaves it, so a file's
+   git state still has the last word on it. */
+.bay-block:has(> .bay.variant.active) > .bay:not(.variant) .bay-name {
+  font-weight: 600;
+}
+
 /* ICONS */
 .bay.variant .bay-icon .codicon {
   font-size: 12px;

@@ -14,6 +14,14 @@
 
 .bay.active .bay-name {
   color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
+  /* And a step heavier. The colour on its own is what a native tab does, and a
+     tab bar is a handful of names in a row; this is a COLUMN of them, where a
+     tone read against the row above and below is the first thing a glance
+     loses. Weight is read without comparing anything to anything.
+
+     Nothing measures a name — it wraps, and the CSS clips it — so a heavier one
+     costs no layout that anybody has to answer for. */
+  font-weight: 600;
 }
 
 /* Drag & Drop States */
