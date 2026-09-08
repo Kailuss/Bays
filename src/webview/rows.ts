@@ -12,7 +12,7 @@
 // HTML deduplicado por clave — es markup que compone el host a partir del tema
 // de iconos, y pasa por la lista blanca de `utils/iconHtml.ts`.
 
-import type { BayView, GroupSection, GroupView, VariantView } from '../shared/protocol';
+import type { BayView, GroupView, VariantView } from '../shared/protocol';
 import { BAY_STATES } from '../shared/bayState';
 import { ICONS } from '../shared/icons';
 import { setTip, setOverflowTip } from './tooltip';
@@ -286,6 +286,29 @@ export function buildGroupHeader(group: GroupView): HTMLDivElement {
   return header;
 }
 
+/**
+ * La caja en la que van las filas de un grupo, detrás de su cabecera.
+ *
+ * Existe por UNA cosa: el plegado. La lista es plana —una bay es hermana de la
+ * cabecera y no hija suya— así que sin ella no hay ninguna caja cuyo alto animar,
+ * y animar cada bloque por su cuenta da un acordeón (cada fila recortada por su
+ * mitad) en vez de un plegado, que recorta el grupo entero desde abajo.
+ *
+ * Y de propina se lleva dos cosas que había que componer a mano: el plegado deja
+ * de escribirse fila a fila —es una clase en la caja, así que un bloque que
+ * nazca dentro de un grupo plegado nace escondido— y "la última fila de un
+ * grupo" pasa a ser `:last-child`, donde antes era la que tenía una cabecera
+ * detrás.
+ *
+ * Sin cabecera también la lleva: con un solo grupo no hay nada que plegar, pero
+ * una lista cuya forma dependa de eso sería una segunda forma que mantener.
+ */
+export function buildGroupRows(groupId: number): HTMLDivElement {
+  const rows = el('div', 'group-rows');
+  rows.dataset.groupid = String(groupId);
+  return rows;
+}
+
 function groupButton(groupId: number, action: string, icon: string, label: string): HTMLButtonElement {
   const button = el('button', 'group-btn');
   button.dataset.action  = action;
@@ -301,23 +324,4 @@ export function buildEmpty(): HTMLDivElement {
   const empty = el('div', 'empty');
   empty.textContent = t('No open bays');
   return empty;
-}
-
-/** Los bloques de una lista entera, en orden y con su clave. */
-export function buildBlocks(
-  sections: GroupSection[],
-  layout: RowLayout,
-): { key: string; el: HTMLElement }[] {
-  const blocks: { key: string; el: HTMLElement }[] = [];
-
-  for (const section of sections) {
-    if (section.header) {
-      blocks.push({ key: `group:${section.header.id}`, el: buildGroupHeader(section.header) });
-    }
-    for (const bay of section.bays) {
-      blocks.push({ key: `bay:${bay.id}`, el: buildBayBlock(bay, layout) });
-    }
-  }
-
-  return blocks;
 }

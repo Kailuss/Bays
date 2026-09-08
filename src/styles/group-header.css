@@ -145,6 +145,43 @@
     0 2px 6px var(--bays-card-lift);
 }
 
+/* === The BOX its rows live in ==============================================
+
+   It is there for the FOLD and for nothing else. The list is flat — a bay is a
+   sibling of the header and not a child of it — so without a box there is no
+   height to animate, and the only thing left to move would be each block on its
+   own: a concertina, every row clipped through its middle, instead of a group
+   rolling up from the bottom.
+
+   It wears NOTHING. A plain block box, so the list lays out exactly as it did
+   when the rows hung off #bays. And it earns two things on the way: the fold
+   stops being written row by row — it is a class on the box, so a bay born
+   inside a folded group is born hidden — and "the last row of a group" becomes
+   :last-child, where it used to be the one with a header behind it. */
+.group-rows.collapsed {
+  display: none;
+}
+
+/* While the fold runs the rows are back on screen, and the box clips them to
+   its animated height: the group closes OVER them, rather than losing them and
+   then shrinking an empty box, which is what the movement is there to avoid.
+
+   The clipping is here and never permanent: a row does not contain its own
+   PAINT on purpose, so that nothing about it has to know whether a focus ring or
+   a future mark reaches past its box — and an overflow set at all times is
+   exactly what would cut those off. */
+.group-rows.folding {
+  overflow: hidden;
+}
+
+/* Which is why a box being folded is drawn even once it carries the folded
+   class: the class goes on at the start so it is the definitive one, and with
+   display: none there would be nothing left to animate. Spelled with both
+   classes rather than leaning on which rule is read last. */
+.group-rows.collapsed.folding {
+  display: block;
+}
+
 /* === The bands that close it ===============================================
 
    Four places, one shape: the three orders and the FOLD. A square block the

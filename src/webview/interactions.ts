@@ -19,13 +19,110 @@ function post(message: WebviewToHostMessage): void {
 
 //= COLAPSADO DE GRUPOS
 
-// Collapse a group header and hide its rows (or expand). Shared by the click
-// handler and the post-rebuild restore so both stay in sync.
-function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
-  // Read BEFORE the toggle: an actual unfold is what has to re-fit the paths
-  // below, and this runs over every header on every render that touched
-  // anything — asked after, the answer would be "expanded" for all of them.
-  const wasCollapsed = header.classList.contains('collapsed');
+/**
+ * Cuánto dura el plegado de un grupo.
+ *
+ * Vive aquí y no en `base.css` con las demás duraciones porque ésta es una
+ * animación de JS: un alto no se transiciona desde `auto`, así que los dos
+ * extremos hay que DECIRLOS y el número lo lee `el.animate`. El interruptor
+ * sigue siendo el mismo —`body.no-motion`, que es lo que se pregunta abajo— así
+ * que apagar lo que la vista mueve sigue estando en un solo sitio.
+ */
+const FOLD_MS = 160;
+
+/** El plegado en marcha de cada caja, para poder cancelarlo. */
+const folds = new WeakMap<HTMLElement, Animation>();
+
+/**
+ * La caja con las filas de una cabecera.
+ *
+ * Es su hermana siguiente por construcción: la reconciliación coloca cada
+ * `.group-rows` justo detrás de la cabecera de su grupo.
+ */
+function rowsOf(header: HTMLElement): HTMLElement | null {
+  const next = header.nextElementSibling;
+  return next instanceof HTMLElement && next.classList.contains('group-rows') ? next : null;
+}
+
+/**
+ * El plegado, ANIMADO.
+ *
+ * Lo que se mueve es el ALTO de la caja, que es la única cuyos dos extremos son
+ * estados reales suyos: el grupo entero se recorta desde abajo, que es lo que un
+ * plegado es. Animar cada bloque por su cuenta daría un acordeón —cada fila
+ * cortada por su mitad— y no hay ninguna otra caja que animar, porque la lista
+ * es plana: de eso va `.group-rows`.
+ *
+ * `el.animate` y no una `transition`, la misma elección que hacen las tarjetas
+ * de Atria: un alto no se transiciona desde `auto`, así que los dos extremos se
+ * DICEN en vez de deducirse de un cambio de estilo que el navegador tenga que
+ * notar, y la clase es la definitiva desde el primer instante — una animación
+ * que no llegue a correr deja el grupo bien en vez de a medio abrir.
+ *
+ * Las filas vuelven a la pantalla mientras dura (`.folding`, que además recorta
+ * la caja a su alto animado), así que el grupo se cierra ENCIMA de ellas:
+ * quitarlas primero y encoger después una caja vacía es justo lo que el
+ * movimiento existe para evitar.
+ */
+function slideRows(rows: HTMLElement, collapsed: boolean): void {
+  // Una segunda pulsación cancela la primera. El rechazo que levanta el
+  // cancelado aterriza cuando el mapa ya lleva la animación nueva, y por eso el
+  // cierre comprueba identidad antes de quitar `.folding`: dejada puesta, un
+  // grupo plegado seguiría enseñando las filas que acaba de esconder.
+  folds.get(rows)?.cancel();
+
+  rows.classList.add('folding');
+  rows.classList.toggle('collapsed', collapsed);
+
+  // El extremo abierto se MIDE y el cerrado es CERO. Una tarjeta de Atria mide
+  // los dos porque plegada sigue enseñando su cabecera y su pie; esta caja no
+  // lleva más que filas, así que plegada no mide nada y no hay una segunda
+  // altura que preguntarle al CSS.
+  const open = rows.getBoundingClientRect().height;
+  const start = collapsed ? open : 0;
+
+  // El alto de partida se ESCRIBE antes de pedir la animación, y sin eso el
+  // despliegue destella: una animación se entrega al final de la tanda y hace
+  // efecto desde el frame SIGUIENTE, y la caja acaba de maquetarse a su alto
+  // NUEVO — o sea que ese frame es el estado final del movimiento entero, el
+  // grupo entero abierto de golpe, enseñado un instante y retirado.
+  rows.style.height = `${start}px`;
+
+  const animation = rows.animate(
+    [{ height: `${start}px` }, { height: `${collapsed ? 0 : open}px` }],
+    { duration: FOLD_MS, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+  );
+  folds.set(rows, animation);
+
+  // Lo limpia quien lo POSEE y nunca comparando el valor de vuelta: un alto
+  // medido entra como `362.3999938964844px` y sale serializado como `362.4px`,
+  // así que la comparación sería falsa siempre y la caja se quedaría clavada a
+  // esa altura para lo que dure la vista. La identidad ya la lleva el mapa, que
+  // es lo que dice si el alto escrito es de esta pasada o de la siguiente.
+  const settle = (): void => {
+    if (folds.get(rows) !== animation) { return; }
+    folds.delete(rows);
+    rows.classList.remove('folding');
+    rows.style.height = '';
+  };
+  animation.finished.then(settle, settle);
+}
+
+/**
+ * Pliega o despliega un grupo: la clase de la cabecera, su glifo y sus filas.
+ *
+ * `animate` lo pide la PULSACIÓN y nada más. Reaplicar lo guardado tras un
+ * render es volver a poner el estado que ya había, y animar eso sería el panel
+ * moviéndose solo con cada reporte de git.
+ */
+function setGroupCollapsed(header: HTMLElement, collapsed: boolean, animate = false): void {
+  const rows = rowsOf(header);
+  // Lo que hay puesto lo dice la CAJA y no la cabecera: la reconciliación la
+  // conserva entre renders, así que es donde el plegado de verdad vive — y una
+  // bay que nazca dentro de un grupo plegado nace escondida sin que nadie tenga
+  // que acordarse de esconderla.
+  const wasCollapsed = (rows ?? header).classList.contains('collapsed');
+
   header.classList.toggle('collapsed', collapsed);
 
   // Only the FOLD moves: the group's mark says what it is and does not change
@@ -38,19 +135,29 @@ function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
     icon.classList.add(`codicon-${collapsed ? ICONS.group.foldCollapsed : ICONS.group.foldExpanded}`);
   }
 
-  const rows: HTMLElement[] = [];
-  let sibling = header.nextElementSibling;
-  while (sibling && !sibling.classList.contains('group-header')) {
-    (sibling as HTMLElement).style.display = collapsed ? 'none' : '';
-    rows.push(sibling as HTMLElement);
-    sibling = sibling.nextElementSibling;
+  if (!rows) { return; }
+
+  if (animate && !document.body.classList.contains('no-motion')) {
+    slideRows(rows, collapsed);
+  } else if (wasCollapsed !== collapsed) {
+    // Un estado que ya está puesto NO se vuelve a escribir, y eso es lo que deja
+    // viva una animación en marcha: esta pasada corre tras cada render que haya
+    // tocado algo, o sea con cada reporte de git, y uno que cayera en mitad de
+    // un plegado lo cortaría en seco.
+    folds.get(rows)?.cancel();
+    rows.classList.remove('folding');
+    rows.classList.toggle('collapsed', collapsed);
   }
 
   // A hidden row has no width, so its path could not be fitted while the group
   // was folded — and the render that built it has already been and gone.
   // Unfolding is the moment those rows get a width, so it is the moment they
   // get measured. Folding needs nothing: what is not drawn is not read.
-  if (wasCollapsed && !collapsed) { truncatePathsIn(rows); }
+  //
+  // Y se miden en cuanto la caja se abre, sin esperar a que la animación acabe:
+  // lo que se anima es el ALTO, así que el ancho es el definitivo desde el
+  // primer frame.
+  if (wasCollapsed && !collapsed) { truncatePathsIn([rows]); }
 }
 
 // Flip a header's collapsed state and persist it so the next full rebuild can
@@ -59,7 +166,7 @@ function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
 function toggleGroupCollapsed(header: HTMLElement | null): void {
   if (!header) { return; }
   const isCollapsed = !header.classList.contains('collapsed');
-  setGroupCollapsed(header, isCollapsed);
+  setGroupCollapsed(header, isCollapsed, true);
 
   const groupId = header.dataset.groupid;
   if (groupId !== undefined) {
@@ -74,10 +181,10 @@ function toggleGroupCollapsed(header: HTMLElement | null): void {
 /**
  * Vuelve a aplicar el plegado a las cabeceras que hay en pantalla.
  *
- * El plegado vive SOLO en el DOM —una clase en la cabecera y un `display` en sus
- * hermanas— así que un bloque que la reconciliación acaba de sustituir vuelve
- * abierto. Se guarda por `getState()` y se reaplica tras cada render que de
- * verdad haya tocado algo.
+ * La caja de filas sobrevive a la reconciliación, así que un grupo que ya estaba
+ * plegado sigue plegado sin que nadie se lo diga. Lo que esto cubre es la caja
+ * NUEVA — el primer render, o un grupo que vuelve— que nace abierta y tiene que
+ * recoger lo que se guardó por `getState()`.
  */
 function applyCollapsedGroups(): void {
   const st = vscode.getState();

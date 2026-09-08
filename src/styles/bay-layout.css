@@ -104,11 +104,14 @@
    The last row of the whole list answers the same way, against the panel's own
    bottom edge.
 
-   Scoped to `#bays >` because the drag CLONE is a `.bay-block` hanging from the
-   `<body>`, where it is the last child: unscoped, picking a block up would rub
-   out the rule inside it. */
-#bays > .bay-block:has(+ .group-header) > .bay:last-child::after,
-#bays > .bay-block:last-child > .bay:last-child::after {
+   ONE selector for both, since a group's rows now live in a box of their own
+   (`.group-rows`, which is what the fold animates): the last row of a group is
+   the last one in its box, and the last of the list is the last one in the last
+   box. It used to be two — a block with a header behind it, and the last block
+   of `#bays` — scoped that way to keep the drag CLONE, which hangs off the
+   `<body>` as its last child, from having the rule inside it rubbed out. A clone
+   is in no box, so it is now out of reach by construction. */
+.group-rows > .bay-block:last-child > .bay:last-child::after {
   display: none;
 }
 
