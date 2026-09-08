@@ -34,15 +34,29 @@ export function fileBayId(uriString: string, viewColumn: number): string {
  * Claude Code enseña el nombre de la sesión— así que un id derivado del label
  * deriva con cada cambio de título, huerfaniza la bay y rompe el marcado de
  * activa y el cierre. Sin `viewType` no queda otra que el label.
+ *
+ * Y por eso lleva además `instance`: un `viewType` es fijo por TIPO de panel y no
+ * por panel, así que dos conversaciones de Claude Code —o dos vistas previas de
+ * markdown— en la misma columna componían el mismo id. El mapa de bays va
+ * indexado por id, con lo que la segunda pisaba a la primera y solo se veía una.
+ * Quién acuña ese token, y por qué sobrevive a un retitulado, está en
+ * `platform/tabIdentity.ts`; aquí solo entra como una cadena más, para que la
+ * regla siga siendo pura.
+ *
+ * Es OPCIONAL a propósito: sin token el id es el de siempre, así que un llamante
+ * que no tenga la tab nativa delante sigue componiendo algo válido en vez de uno
+ * partido.
  */
 export function webviewBayId(
   label: string,
   viewColumn: number,
   bayType: BayType,
   viewType?: string,
+  instance?: string,
 ): string {
   const key = (viewType || label).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-  return `${bayType}:${key}-${viewColumn}`;
+  const seat = instance ? `#${instance}` : '';
+  return `${bayType}:${key}${seat}-${viewColumn}`;
 }
 
 /**

@@ -25,6 +25,23 @@ test('webviewBayId: sin viewType cae al label, saneado', () => {
   assert.equal(webviewBayId('Some: Panel!', 1, 'webview'), 'webview:some--panel--1');
 });
 
+test('webviewBayId: dos paneles del mismo viewType no colisionan', () => {
+  // Dos conversaciones de Claude Code en la misma columna: el viewType es el
+  // mismo, así que sin el asiento las dos componían el mismo id y el mapa de
+  // bays solo se quedaba con una.
+  assert.notEqual(
+    webviewBayId('Sesion A', 1, 'webview', 'mainThreadWebview-claudeVSCodePanel', '7'),
+    webviewBayId('Sesion B', 1, 'webview', 'mainThreadWebview-claudeVSCodePanel', '8'),
+  );
+});
+
+test('webviewBayId: el asiento sobrevive a un retitulado', () => {
+  assert.equal(
+    webviewBayId('Sesion A', 1, 'webview', 'v', '7'),
+    webviewBayId('Otro titulo', 1, 'webview', 'v', '7'),
+  );
+});
+
 test('webviewBayId: el tipo de bay entra en el id', () => {
   assert.notEqual(
     webviewBayId('X', 1, 'webview', 'v'),

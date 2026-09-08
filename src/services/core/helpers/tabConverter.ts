@@ -7,6 +7,7 @@ import type { GitSyncService                 } from '../../integration/GitSyncSe
 import { formatFilePathWithParts             } from '../../../platform/pathFormatters';
 import { resolveLanguageId                   } from '../../../platform/languageRegistry';
 import { Logger                              } from '../../../platform/logger';
+import { tabInstanceToken                    } from '../../../platform/tabIdentity';
 import { fileBayId, webviewBayId, variantBayId } from '../../../utils/idRules';
 import { classifyDiffType, determineParentId, determineParentUri, resolveSourceUri } from './tabClassifier';
 
@@ -191,7 +192,7 @@ export function convertToBay(
   } else if (uri && uri.scheme === 'chat-editing-snapshot-text-model') {
     id = generateVariantId(uri, undefined, viewColumn);
   } else {
-    id = generateId(label, uri, viewColumn, tabType, viewType);
+    id = generateId(label, uri, viewColumn, tabType, viewType, uri ? undefined : tabInstanceToken(VSTab));
   }
 
   const baseMetadata: BayMetadata = {
@@ -208,6 +209,10 @@ export function convertToBay(
     fileExtension : fileType,
     bayType       : tabType,
     viewType,
+    // El asiento de esta tab entre las de su mismo `viewType`. Solo lo llevan las
+    // bays sin uri, que son las únicas que sin él comparten id — y es lo que
+    // `matchesNative` compara para no resolver dos paneles iguales a la misma tab.
+    tabInstance   : uri ? undefined : tabInstanceToken(VSTab),
     // Se deriva del nombre de archivo (registro de lenguajes contribuidos) en vez
     // de leer `document.languageId`: las tabs restauradas no tienen documento
     // cargado al arrancar y abrirlo despertaría todas las extensiones de lenguaje.
@@ -363,10 +368,11 @@ export function generateId(
   viewColumn : vscode.ViewColumn,
   tabType    : BayType,
   viewType?  : string,
+  instance?  : string,
 ): string {
   return uri
     ? fileBayId(uri.toString(), viewColumn)
-    : webviewBayId(label, viewColumn, tabType, viewType);
+    : webviewBayId(label, viewColumn, tabType, viewType, instance);
 }
 
 /**
@@ -422,8 +428,9 @@ export function generateIdFromNativeTab(VSTab: vscode.Tab): string | null {
     return generateVariantId(uri, undefined, VSTab.group.viewColumn);
   }
   // Pass viewType so webview ids stay stable across the panel's runtime title
-  // changes — mirrors convertToBay exactly (see generateId).
-  return generateId(label, uri, VSTab.group.viewColumn, tabType, viewType);
+  // changes, and the tab's instance token so two panels of the SAME type don't
+  // collapse into one id — mirrors convertToBay exactly (see generateId).
+  return generateId(label, uri, VSTab.group.viewColumn, tabType, viewType, uri ? undefined : tabInstanceToken(VSTab));
 }
 
 /**

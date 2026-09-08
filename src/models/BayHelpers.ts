@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { Logger } from '../platform/logger';
+import { tabInstanceToken } from '../platform/tabIdentity';
 import { VSCODE_COMMANDS } from '../constants/commands';
 import type { BayMetadata, BayState, BayCapabilities, BayViewMode as BayViewMode, BayType } from './Bay';
 
@@ -117,9 +118,14 @@ export class BayHelpers {
   /**  */
   static matchesNative(t: vscode.Tab, metadata: BayMetadata): boolean {
     if (t.input instanceof vscode.TabInputWebview) {
-      // Prefer the STABLE viewType. Some webview panels rewrite their title at
-      // runtime (e.g. Claude Code's chat/plan tabs show the session name), so a
-      // label-only match goes stale and the bay can no longer be activated/closed.
+      // El asiento primero: el `viewType` es fijo por TIPO de panel, así que dos
+      // conversaciones de Claude Code lo comparten y una comparación por viewType
+      // resolvía las dos bays a la MISMA tab — activar una activaba la otra y
+      // cerrar una cerraba la que no era.
+      if (metadata.tabInstance) { return tabInstanceToken(t) === metadata.tabInstance; }
+      // Sin asiento, el viewType ESTABLE. Algunos paneles reescriben su título en
+      // runtime (el chat de Claude Code enseña el nombre de la sesión), así que un
+      // match por label se queda viejo y la bay deja de poder activarse o cerrarse.
       if (metadata.viewType && t.input.viewType === metadata.viewType) { return true; }
       return t.label === metadata.label;
     }

@@ -82,6 +82,11 @@ export type BayMetadata = {
   //: LANGUAGE & EDITOR
   languageId?   : string;        // VS Code language ID (typescript, markdown, python...)
   viewType?     : string;        // Webview / custom editor viewType (for icon mapping).
+  // Qué panel de ese `viewType` es éste. Solo lo llevan las bays SIN uri: son las
+  // únicas cuyo id no se distingue solo (dos chats de Claude Code, dos previews de
+  // markdown), y es lo que `matchesNative` compara para no resolver los dos a la
+  // misma tab. Lo acuña `platform/tabIdentity.ts` y vive lo que vive la tab.
+  tabInstance?  : string;
 
   //: FILE CHARACTERISTICS
   isReadOnly?   : boolean;       // File is read-only (permissions or remote)
