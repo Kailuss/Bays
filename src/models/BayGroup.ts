@@ -33,6 +33,15 @@ export function defaultGroupColor(viewColumn: number): BayGroupColor {
 export type BayGroup = {
   id         : number;
   viewColumn : vscode.ViewColumn;
+  /**
+   * What `TabGroup.isActive` said the LAST time a group event arrived.
+   *
+   * It is a memory and not the source of truth: what a header is drawn from is
+   * `platform/activeGroup.ts`, read at the moment of reporting. This one exists
+   * so `handleGroupChanges` can tell whether the focus MOVED — that is a change
+   * no bay flag reports, since a tab is active in its own group and a split
+   * editor has one per group.
+   */
   isActive   : boolean;
   bays       : Bay[];
   /** Nombre por defecto derivado de la columna ("Group 1"). */

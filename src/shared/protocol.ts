@@ -56,6 +56,16 @@ export type ShowContextMenuMessage = {
 export type UpdateActiveBayMessage = {
   type: 'updateActiveBay';
   activeBayIds: string[];
+  /**
+   * Which editor group holds the focused tab, or `null` for none.
+   *
+   * It travels beside the bay ids and is not derived from them: `Tab.isActive`
+   * means active IN ITS GROUP, so with a split editor every group has one and
+   * the list above says nothing about which group is being worked in. This comes
+   * from `TabGroup.isActive`, which is the platform answering that exact
+   * question.
+   */
+  activeGroupId: number | null;
 };
 
 /** Título de webview reescrito en runtime (p.ej. Claude Code). */
@@ -161,6 +171,8 @@ export type GroupView = {
   label   : string;
   color   : BayGroupColor;
   locked  : boolean;
+  /** Whether this is the group holding the focused tab (`TabGroup.isActive`). */
+  active  : boolean;
 };
 
 /** Uno de los colores con los que se tiñe un grupo. */

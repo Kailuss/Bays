@@ -271,6 +271,14 @@ export function initInteractions(): void {
     }
 
     if (msg.type === 'updateActiveBay') {
+      // The header of the group being worked in, kept in step on the SILENT path
+      // too: this message exists so that changing tabs costs no rebuild, and a
+      // mark that only a full render could move would sit on the wrong group for
+      // as long as nothing else happened.
+      document.querySelectorAll<HTMLElement>('.group-header').forEach(h => {
+        h.classList.toggle('current', h.dataset.groupid === String(msg.activeGroupId));
+      });
+
       const activeSet = new Set(msg.activeBayIds);
       document.querySelectorAll<HTMLElement>('.bay').forEach(t => {
         t.classList.toggle('active', activeSet.has(t.dataset.bayId ?? ''));

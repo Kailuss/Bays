@@ -21,6 +21,7 @@ import { relativeAge } from '../utils/relativeAge';
 import { ICONS } from '../shared/icons';
 import { IconRenderer, StylesBuilder, IconKeyRegistry, BuildSectionsOptions, WebviewResourceUris, PendingIcon, PendingIconRequest, BuildSectionsResult } from './html';
 import type { BayView, GroupSection, QuickActionView, VariantView } from '../shared/protocol';
+import { activeGroupId } from '../platform/activeGroup';
 
 export class BaysHtmlBuilder {
   private readonly iconRenderer: IconRenderer;
@@ -119,12 +120,18 @@ export class BaysHtmlBuilder {
     // que distinguirlo. El bloqueo, en cambio, sí sigue en pie.
     const single = populated.length <= 1;
 
+    // Which group holds the foreground tab, asked once for the whole list.
+    const foregroundGroup = activeGroupId();
+
     const sections: GroupSection[] = populated.map(({ group, bays }) => ({
       header: single ? undefined : {
         id     : group.id,
         label  : getGroupLabel(group),
         color  : group.color,
         locked : group.isLocked,
+        // The platform's answer and not the model's copy of it, so that a full
+        // render and the partial message agree on one source.
+        active : group.id === foregroundGroup,
       },
       bays: this.buildBays(bays, group.isLocked, showPath, copilotReady, pendingIcons),
     }));

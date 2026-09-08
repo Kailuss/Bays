@@ -397,15 +397,23 @@ export class BayEventService {
     }
 
     // NON-STRUCTURAL (event.changed): active group moved and/or group flags.
-    // Keep the group-active marker in state (rendered on the next full rebuild;
-    // a partial message for it arrives with Fase 2), and update the highlight.
+    // The group holding the FOREGROUND tab, straight from the platform.
     const nativeActive = vscode.window.tabGroups.activeTabGroup?.viewColumn;
+    let groupMoved = false;
     for (const group of this.stateService.getGroups()) {
-      group.isActive = group.id === nativeActive;
+      const active = group.id === nativeActive;
+      if (group.isActive !== active) { groupMoved = true; }
+      group.isActive = active;
     }
 
+    // The group moving is a change of its own, and it has to be said out loud:
+    // `Tab.isActive` means active IN ITS GROUP, so moving the focus from one
+    // group to another leaves every one of those flags exactly where it was and
+    // `syncActiveState` reports nothing. Asked of the bays alone, the header of
+    // the group being worked in would stay on the one left behind until
+    // something else happened to trigger a rebuild.
     const { hasChanges } = this.activeStateService.syncActiveState();
-    if (hasChanges) {
+    if (hasChanges || groupMoved) {
       this.stateService.notifyActiveChange();
     }
   }

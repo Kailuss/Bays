@@ -12,6 +12,7 @@ import { CopilotService }       from '../services/integration/CopilotService';
 import { BayDragDropService }   from '../services/ui/BayDragDropService';
 import { FileActionRegistry }   from '../services/registry/FileActionRegistry';
 import { Logger }               from '../platform/logger';
+import { activeGroupId } from '../platform/activeGroup';
 import { bayStateCode }         from '../utils/stateIndicator';
 import { BaysHtmlBuilder }      from './BaysHtmlBuilder';
 import type { PendingIcon }     from './html';
@@ -246,6 +247,11 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     this._view.webview.postMessage({
       type: 'updateActiveBay',
       activeBayIds,
+      // Read from the platform here and not from the loop above: the bay ids
+      // cannot answer it (a tab is active in its own group, so a split editor
+      // has one per group), and our own copy of the answer is only as fresh as
+      // the last group event.
+      activeGroupId: activeGroupId(),
     } satisfies UpdateActiveBayMessage);
   }
 
