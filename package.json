@@ -249,7 +249,7 @@
       {
         "id": "bays.viewOptions",
         "label": "View Options",
-        "icon": "$(settings)"
+        "icon": "$(kebab-vertical)"
       }
     ],
     "menus": {
