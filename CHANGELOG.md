@@ -7,6 +7,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.11] - 2026-09-09
+
+### Changed
+
+- A bay moves to another group as a live tab, so nothing is closed and reopened
+  on the way.
+
+### Fixed
+
+- Moving a bay to another group takes its variants with it, instead of leaving
+  its diffs and its preview under the header it came from.
+
 ## [0.4.10] - 2026-09-08
 
 ### Changed
