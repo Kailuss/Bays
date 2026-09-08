@@ -69,9 +69,15 @@ export function initDragDrop(): void {
     if (!block) { return; }
     if (target.closest('button')) { return; }
 
-    // Los child bays no actúan como handle — sólo la fila padre inicia el drag
-    const clickedTab = target.closest('.bay');
-    if (clickedTab && clickedTab.classList.contains('variant')) { return; }
+    // A variant is a handle for its own BLOCK, exactly like the row above it.
+    // What travels has never been a row: it is the block — a bay with its diffs
+    // and previews hanging off it — so refusing the gesture on the variants left
+    // most of a tall block dead to a drag that its top row answered, and the
+    // only way to find that out was to try. Nothing else changes here: `block`
+    // is the same `.bay-block` whichever of its rows was pressed.
+    //
+    // The two blocks that still refuse are below, and they refuse for what the
+    // HOST would do with them: an orphan variant block and a pinned one.
 
     // Orphan variant blocks (a diff/preview whose parent file isn't open) render as
     // a normal .bay-block but the host rejects reordering them, so dragging would
