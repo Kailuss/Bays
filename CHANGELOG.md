@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.6] - 2026-09-08
+
+### Fixed
+
+- The view no longer points an icon of its own at the 256px marketplace PNG. The
+  activity bar draws a container's icon, which is the `list-flat` codicon, and a
+  view that declares none inherits it: one mark, said once, and the PNG goes back
+  to being what it is, the logo of the marketplace page.
+
 ## [0.4.5] - 2026-09-08
 
 ### Fixed
