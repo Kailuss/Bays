@@ -207,8 +207,11 @@ export class BaysHtmlBuilder {
     });
 
     // Variantes huérfanas: su parent no está abierto, o vive en otro grupo.
+    // Se pregunta a un Set y no a `parents.some`: aquello es un recorrido de los
+    // padres por cada variante, y esto corre en cada reporte de git.
+    const parentIds = new Set(parents.map(parent => parent.metadata.id));
     for (const child of variants) {
-      if (parents.some(parent => parent.metadata.id === child.metadata.sourceBayId)) { continue; }
+      if (parentIds.has(child.metadata.sourceBayId as string)) { continue; }
       views.push(this.buildOrphan(child, locked, pendingIcons));
     }
 

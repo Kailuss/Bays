@@ -336,6 +336,20 @@ export class BayStateService {
     return Array.from(this.bays.values());
   }
 
+  /**
+   * Every bay, WITHOUT copying the map.
+   *
+   * For passes that only READ and finish before anything mutates: a scan for
+   * one bay's variants, or for which of them are active. `getAllBays` allocates
+   * the whole list to be walked once and thrown away, and those passes run on
+   * every close and on every tab switch. A pass that MUTATES takes the array
+   * instead — iterating a Map while deleting from it is where that costs more
+   * than it saves.
+   */
+  eachBay(): IterableIterator<Bay> {
+    return this.bays.values();
+  }
+
   getBaysByGroupId(groupId: number): Bay[] {
     const group = this.groups.get(groupId);
     return group ? [...group.bays] : [];

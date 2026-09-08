@@ -237,11 +237,12 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
   private refreshSilent(): void {
     if (!this._view || this._fullRefreshPending) { return; }
 
+    // Walked flat, over the store's own map: this runs on every tab switch, and
+    // asking group by group copies each group's array to read a flag off it.
+    // Which group a bay is in does not matter here — the ids are what travels.
     const activeBayIds: string[] = [];
-    for (const group of this.stateService.getGroups()) {
-      for (const bay of this.stateService.getBaysByGroupId(group.id)) {
-        if (bay.state.isActive) { activeBayIds.push(bay.metadata.id); }
-      }
+    for (const bay of this.stateService.eachBay()) {
+      if (bay.state.isActive) { activeBayIds.push(bay.metadata.id); }
     }
 
     this._view.webview.postMessage({

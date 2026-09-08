@@ -301,8 +301,11 @@ export class BayEventService {
    */
   private handleFilesRenamed(event: vscode.FileRenameEvent): void {
     const affected: Array<{ bay: Bay; newUri: vscode.Uri }> = [];
+    // Snapshotted ONCE: `getAllBays` copies the whole map, and renaming a folder
+    // delivers one event entry per file inside it.
+    const bays = this.stateService.getAllBays();
     for (const { oldUri, newUri } of event.files) {
-      for (const bay of this.stateService.getAllBays()) {
+      for (const bay of bays) {
         const u = bay.metadata.uri;
         if (!u || !this.isSameOrUnder(u, oldUri)) { continue; }
         if (u.path === oldUri.path) {
@@ -346,8 +349,11 @@ export class BayEventService {
    * intentionally-kept editor still shows.
    */
   private handleFilesDeleted(event: vscode.FileDeleteEvent): void {
+    // Snapshotted before the loop for the same reason as the rename path — and
+    // safely, because `removeBay` mutates the store's map and not this array.
+    const bays = this.stateService.getAllBays();
     for (const deletedUri of event.files) {
-      for (const bay of this.stateService.getAllBays()) {
+      for (const bay of bays) {
         const u = bay.metadata.uri;
         if (!u || !this.isSameOrUnder(u, deletedUri)) { continue; }
         // Variants follow their parent's removal; don't purge them standalone.

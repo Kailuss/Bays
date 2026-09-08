@@ -98,8 +98,13 @@ export class BayHierarchyService {
    * @returns Array of variant bays
    */
   fetchVariants(sourceBayId: string): Bay[] {
-    return this.stateService.getAllBays()
-      .filter(bay => bay.metadata.sourceBayId === sourceBayId);
+    const variants: Bay[] = [];
+    // Iterated and not `getAllBays().filter(...)`: that copies every bay into an
+    // array to walk it once, and this runs on every close, cascaded per variant.
+    for (const bay of this.stateService.eachBay()) {
+      if (bay.metadata.sourceBayId === sourceBayId) { variants.push(bay); }
+    }
+    return variants;
   }
 
   /**
@@ -128,14 +133,23 @@ export class BayHierarchyService {
    */
   recalculateAllCounts(): void {
     const allBays = this.stateService.getAllBays();
-    const parents = allBays.filter(bay => !bay.metadata.sourceBayId);
+
+    // Counted in ONE pass instead of re-filtering the whole list per parent: a
+    // scan per parent is quadratic in the open tabs, and it allocates an array
+    // for each of them to read a length off.
+    const counts = new Map<string, number>();
+    for (const bay of allBays) {
+      const sourceId = bay.metadata.sourceBayId;
+      if (sourceId) { counts.set(sourceId, (counts.get(sourceId) ?? 0) + 1); }
+    }
 
     let updated = 0;
-    for (const parent of parents) {
-      const children = allBays.filter(bay => bay.metadata.sourceBayId === parent.metadata.id);
-      const actualCount = children.length;
+    for (const parent of allBays) {
+      if (parent.metadata.sourceBayId) { continue; }
 
-      if (parent.state.variantCount !== actualCount || 
+      const actualCount = counts.get(parent.metadata.id) ?? 0;
+
+      if (parent.state.variantCount !== actualCount ||
           parent.state.hasVariant !== (actualCount > 0)) {
         parent.state.variantCount = actualCount;
         parent.state.hasVariant = actualCount > 0;

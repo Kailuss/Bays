@@ -221,6 +221,12 @@ export function convertToBay(
 
   const metadata = BayHelpers.enrichMetadata(baseMetadata);
 
+  // Asked ONCE and shared by the two objects below. Both are lookups into a
+  // live index, but the call runs per tab on every full sync, and asking twice
+  // for one answer also lets the two copies disagree if it moves in between.
+  const gitStatus          = uri ? gitService.getGitStatus(uri) : null;
+  const diagnosticSeverity = uri ? getDiagnosticSeverity(uri) : null;
+
   const baseState = {
     isActive           : VSTab.isActive,
     isDirty            : VSTab.isDirty,
@@ -229,8 +235,8 @@ export function convertToBay(
     groupId            : viewColumn,
     viewColumn,
     indexInGroup       : index ?? 0,
-    gitStatus          : uri ? gitService.getGitStatus(uri) : null,
-    diagnosticSeverity : uri ? getDiagnosticSeverity(uri) : null,
+    gitStatus,
+    diagnosticSeverity,
   };
 
   const defaultState      = BayHelpers.createDefaultState();
@@ -266,8 +272,8 @@ export function convertToBay(
     lastAccessTime : Date.now(),
     syncVersion    : 0,
 
-    gitStatus      : uri ? gitService.getGitStatus(uri) : null,
-    diagnosticSeverity : uri ? getDiagnosticSeverity(uri) : null,
+    gitStatus,
+    diagnosticSeverity,
 
     isTransient    : false,
     isProtected    : false,
