@@ -597,8 +597,15 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     // The markdown "Open Preview" action needs no special-casing here: the
     // preview opens as its own tab, arrives as a variant bay through the normal
     // tab events, and the resulting structural rebuild hides the button.
+    //
+    // What the context carries besides the view mode is the bay's GROUP, because
+    // an order that opens a child has to open it in its parent's group and the
+    // commands that do so take no column of their own.
     const shouldFocus = this.fileActionRegistry.shouldSetFocus(actionId);
-    await this.fileActionRegistry.execute(actionId, bay.metadata.uri, { viewMode: bay.state.viewMode });
+    await this.fileActionRegistry.execute(actionId, bay.metadata.uri, {
+      viewMode   : bay.state.viewMode,
+      viewColumn : bay.state.viewColumn,
+    });
 
     if (shouldFocus && !bay.state.isActive) {
       await bay.activate();

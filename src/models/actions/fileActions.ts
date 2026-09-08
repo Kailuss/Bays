@@ -73,14 +73,30 @@ export async function compareWithActive(
     'vscode.diff',
     active.document.uri,
     metadata.uri,
-    `${path.basename(active.document.fileName)} ↔ ${metadata.label}`
+    `${path.basename(active.document.fileName)} ↔ ${metadata.label}`,
+    // A child bay is born in its parent's group, and the parent of THIS diff is
+    // the active editor and not this bay: with two different files the ORIGINAL
+    // side is the parent (`determineParentUri`), and the original side is the
+    // active editor. So the column is its own, which is not always the active
+    // GROUP - with a webview in front, `activeTextEditor` is the last text
+    // editor to have changed input, wherever it lives.
+    { viewColumn: active.viewColumn ?? vscode.ViewColumn.Active },
   );
 }
 
-export async function openChanges(metadata: BayMetadata, _state: BayState): Promise<void> {
+export async function openChanges(metadata: BayMetadata, state: BayState): Promise<void> {
   if (!metadata.uri) {
     return;
   }
+  // A child bay is born in its parent's group, and this diff hangs off THIS bay:
+  // its working-tree parent is the file itself. The git extension opens it at
+  // `ViewColumn.Active` and takes no column, so the group is put in front first
+  // or the diff lands wherever the focus was and comes out as an orphan row.
+  //
+  // The GROUP is enough here, unlike the markdown preview: the command resolves
+  // its resource from the uri it is handed, so it never asks which editor is in
+  // front - only which group is.
+  await BayHelpers.focusGroup(state.viewColumn);
   await vscode.commands.executeCommand('git.openChange', metadata.uri);
 }
 

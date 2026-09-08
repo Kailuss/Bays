@@ -10,6 +10,13 @@ export type FileActionContext = {
   splitOrientation?: 'horizontal' | 'vertical';
   compareMode?: boolean;
   debugMode?: boolean;
+
+  /**
+   * The group the bay lives in. An order that OPENS A CHILD needs it: a child
+   * bay is born in its parent's group, and the commands that open one take no
+   * column - they read one off whatever is in the foreground.
+   */
+  viewColumn?: vscode.ViewColumn;
 }
 
 /** Quick action shown for specific file types. */
