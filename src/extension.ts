@@ -18,6 +18,7 @@ import { registerCopilotCommands } from './commands/copilotCommands';
 import { activateLanguageRegistry } from './platform/languageRegistry';
 import { preloadWebviewExtensionIcons } from './platform/webviewExtensionIcons';
 import { Logger                  } from './platform/logger';
+import { TIMINGS }                from './constants/timings';
 
 export async function activate(context: vscode.ExtensionContext) {
   Logger.initialize();
@@ -157,9 +158,27 @@ export async function activate(context: vscode.ExtensionContext) {
         enriching = false;
       }
     };
+
+    // Coalesced, because the trigger is a STRUCTURAL change and the work is
+    // disk: one tab opening fires `onDidChangeState` several times over (the
+    // bay lands, its hierarchy links, its counts settle), and each one would
+    // scan the transcript directory. The single-flight guard above only stops
+    // them overlapping — it still runs the scan again for the tail of a burst.
+    // The window is short enough that a title lands within a frame of the row.
+    let enrichTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleEnrich = () => {
+      if (enrichTimer) { clearTimeout(enrichTimer); }
+      enrichTimer = setTimeout(() => {
+        enrichTimer = null;
+        void enrichClaudeTitles();
+      }, TIMINGS.CLAUDE_TITLE_DEBOUNCE);
+    };
     context.subscriptions.push(
-      stateService.onDidChangeState(() => void enrichClaudeTitles()),
+      { dispose: () => { if (enrichTimer) { clearTimeout(enrichTimer); } } },
+      stateService.onDidChangeState(scheduleEnrich),
     );
+    // The watcher already coalesces on its own side, and the first pass is the
+    // one nobody is waiting behind: both go straight through.
     claudeConversation.watch(() => void enrichClaudeTitles());
     void enrichClaudeTitles();
 

@@ -7,6 +7,9 @@ export const TIMINGS = {
   // Debounce intervals (ms)
   WEBVIEW_REFRESH_DEBOUNCE: 30,
   ICON_THEME_CHANGE_DEBOUNCE: 100,
+  // Structural changes arrive in bursts and this one answers with disk reads:
+  // one window per burst instead of one scan per event.
+  CLAUDE_TITLE_DEBOUNCE: 150,
 
   // Retry delays (ms)
   ACTIVATION_RETRY_DELAY: 50,

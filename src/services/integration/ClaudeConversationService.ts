@@ -6,6 +6,7 @@ import * as os from 'os';
 import { Bay } from '../../models/Bay';
 import { BayHelpers } from '../../models/BayHelpers';
 import { Logger } from '../../platform/logger';
+import { matchConversationTitle } from '../../utils/claudeTitles';
 
 /**
  * Reads Claude Code's conversation title from its on-disk transcripts and uses it
@@ -138,17 +139,20 @@ export class ClaudeConversationService {
   }
 
   /**
-   * Full conversation title for a Claude bay, resolved by matching its (truncated)
-   * tab label against candidate transcripts' latest ai-title. Returns undefined
-   * when there's no unambiguous match (caller falls back to the native label).
+   * The latest title of each of the newest transcripts in the workspace's
+   * project dirs.
+   *
+   * Resolved ONCE per pass and not once per bay: the candidate set is the same
+   * for every Claude tab in the window, and building it is a `readdir` plus a
+   * `stat` per transcript — hundreds of filesystem calls in a directory that has
+   * been in use for a while. Per bay, that is that whole scan multiplied by the
+   * open chats, on a path that runs whenever a tab opens or closes.
+   *
+   * `lastTitle` is cached by mtime, so what a repeat pass costs is the stats.
    */
-  private async resolveFullTitle(tabLabel: string): Promise<string | undefined> {
-    // Claude sets the tab title to `aiTitle.substring(0,24)+"…"`; strip the marker
-    // to get the prefix. A brand-new session shows the generic "Claude Code".
-    const prefix = tabLabel.endsWith('…') ? tabLabel.slice(0, -1) : tabLabel;
-    if (!prefix || prefix === 'Claude Code') { return undefined; }
+  private async candidateTitles(): Promise<string[]> {
+    const titles: string[] = [];
 
-    const matches = new Set<string>();
     for (const dir of await this.projectDirs()) {
       let files: string[];
       try { files = (await fs.readdir(dir)).filter(f => f.endsWith('.jsonl')); }
@@ -163,14 +167,15 @@ export class ClaudeConversationService {
 
       for (const { p } of stated.slice(0, MAX_TRANSCRIPTS)) {
         const title = await this.lastTitle(p);
-        if (title && title.startsWith(prefix)) { matches.add(title); }
+        if (title) { titles.push(title); }
       }
     }
-    return matches.size === 1 ? [...matches][0] : undefined;
+
+    return titles;
   }
 
   /**
-   * Resolves the best display name for each Claude bay (full ai-title when found,
+   * Resolves the best display name for each Claude bay (full title when found,
    * else the current native tab label) and mutates `metadata.label` in place.
    * Returns the ids whose label actually changed, for a partial webview patch.
    *
@@ -179,13 +184,17 @@ export class ClaudeConversationService {
    */
   async enrichLabels(bays: Bay[]): Promise<string[]> {
     const changed: string[] = [];
+    if (bays.length === 0) { return changed; }
+
+    const titles = await this.candidateTitles();
+
     for (const bay of bays) {
-      const full   = await this.resolveFullTitle(bay.metadata.label);
+      const full   = matchConversationTitle(titles, bay.metadata.label);
       const native = BayHelpers.findNativeTab(bay.metadata, bay.state)?.label;
       const desired = full ?? native ?? bay.metadata.label;
 
       if (desired && desired !== bay.metadata.label) {
-        Logger.log(`[ClaudeConv] "${bay.metadata.label}" → "${desired}"${full ? '' : ' (native fallback — no transcript match)'}`);
+        Logger.log(`[ClaudeConv] "${bay.metadata.label}" -> "${desired}"${full ? '' : ' (native fallback - no transcript match)'}`);
         bay.metadata.label = desired;
         bay.metadata.tooltipText = full ?? desired;
         changed.push(bay.metadata.id);
