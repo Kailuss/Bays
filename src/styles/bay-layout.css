@@ -41,7 +41,19 @@
    Positioned out of flow it costs nothing of the layout.
 
    It stops short of both edges by the group header's own margin, so the line
-   runs between the same two columns as the card that heads the list.
+   runs between the same two columns as the card that heads the list, and its
+   two ends FADE OUT rather than stopping: a line that ends on a hard cap draws
+   two more edges, one at each end, and this one is not enclosing anything. What
+   it has to say is where a row ends, which is a thing said in the middle.
+
+   The fade is a MASK and not a gradient background, and that is what keeps the
+   three forms of this rule to one property each: whole is a colour, broken is a
+   repeating gradient, and neither has to restate how its ends run out.
+
+   `-webkit-mask-image` as well as the unprefixed one: the standard property is
+   much newer than the floor `engines.vscode` declares, so without the prefixed
+   line the mask does not apply there at all — a rule running cap to cap, with
+   nothing in the build or at runtime to report it.
 
    `bottom: 0` and never a negative offset: a variant row carries
    `contain: strict`, whose paint containment clips to the padding edge, so
@@ -56,8 +68,34 @@
   right: var(--bays-card-gap);
   bottom: 0;
   height: 1px;
-  background: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
+  background: var(--bays-rule);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--bays-rule-fade), #000 calc(100% - var(--bays-rule-fade)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--bays-rule-fade), #000 calc(100% - var(--bays-rule-fade)), transparent);
   pointer-events: none;
+}
+
+/* Between a row and the FIRST of its variants the rule is BROKEN. A whole rule
+   says that what follows is another thing; a broken one, that it is the same
+   thing one step further in, which is what a variant is — a diff, a snapshot or
+   a preview OF the row it hangs from.
+
+   Only what the line is MADE OF changes: it keeps its colour, its inset, its
+   column and the mask that runs its ends out. */
+.bay:not(.variant):has(+ .bay.variant)::after {
+  background: repeating-linear-gradient(
+    to right,
+    var(--bays-rule) 0 var(--bays-rule-dash),
+    transparent var(--bays-rule-dash) calc(var(--bays-rule-dash) * 2)
+  );
+}
+
+/* And between two variants there is NO rule. What a variant belongs to is
+   already said by its indent, by its own surface and by the row above them all,
+   so a line between each pair is an edge drawn inside what reads as one entry:
+   with four diffs open on a file, four of them. The LAST variant keeps its
+   rule, because that one is not inside the block but under it. */
+.bay.variant:has(+ .bay.variant)::after {
+  display: none;
 }
 
 /* The LAST row of a group carries none: what comes next is the next group's
@@ -71,6 +109,15 @@
    out the rule inside it. */
 #bays > .bay-block:has(+ .group-header) > .bay:last-child::after,
 #bays > .bay-block:last-child > .bay:last-child::after {
+  display: none;
+}
+
+/* And the drag CLONE carries none either, for a reason of its own: it is a card
+   in the air, with its rounded corners and its shadow, so a rule along its
+   bottom is an edge drawn against nothing and cut by the corner it runs into.
+   It is the one place a block is not a row of a list, which is also why the
+   rule above cannot reach it and this one has to name it. */
+.drag-clone > .bay:last-child::after {
   display: none;
 }
 
