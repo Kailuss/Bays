@@ -606,17 +606,24 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
   //= HELPERS
 
   /**
-   * Devuelve el nombre del workspace activo.
-   * Usa el nombre del archivo .code-workspace si está disponible,
-   * o el nombre de la primera carpeta, o 'No Folder'.
+   * Cómo se llama la VENTANA en la cabecera.
+   *
+   * Lo que decide la respuesta es si hay un `workspaceFile`, porque eso es lo que
+   * separa un workspace de una carpeta suelta:
+   *
+   *  - un workspace GUARDADO se llama como su fichero, sin la extensión;
+   *  - uno SIN GUARDAR se llama `Workspace` a secas. Su `workspaceFile` lleva
+   *    esquema `untitled:` y una marca de tiempo por ruta, así que no hay nombre
+   *    que leer; y caer al nombre de la primera carpeta —que es lo que hacía—
+   *    nombra la ventana entera por uno de sus proyectos, que en multi-root es
+   *    decir algo falso sobre los otros;
+   *  - sin fichero de workspace la ventana ES una carpeta, así que su nombre lo
+   *    dice. Ahí no hay nada que confundir: solo hay un proyecto.
    */
   private getWorkspaceName(): string {
-    // El esquema y no solo la presencia: un workspace SIN GUARDAR lleva un
-    // `workspaceFile` con esquema `untitled:` cuya ruta es una marca de tiempo,
-    // así que sin mirarlo la cabecera dice un número. Ahí cae al nombre de la
-    // primera carpeta, que es lo que VS Code enseña.
     const wsFile = vscode.workspace.workspaceFile;
-    if (wsFile && wsFile.scheme !== 'untitled') {
+    if (wsFile) {
+      if (wsFile.scheme === 'untitled') { return 'Workspace'; }
       const base = wsFile.path.split('/').pop() ?? '';
       return base.replace(/\.code-workspace$/i, '') || 'Workspace';
     }
