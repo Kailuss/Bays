@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.12] - 2026-09-09
+
+### Changed
+
+- The extension icon carries an amber band instead of a pink one.
+
 ## [0.4.11] - 2026-09-09
 
 ### Changed
