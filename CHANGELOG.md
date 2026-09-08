@@ -7,6 +7,85 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.5] - 2026-09-08
+
+### Fixed
+
+- A child row opens in its PARENT's group instead of wherever the focus happened
+  to be. Pressing Open Preview on a bay that was not the one in front sent the
+  preview to the active group, and the list is composed one group at a time: the
+  preview came out as an orphan row under a foreign header while the source kept
+  offering the button, because as far as that group was concerned nothing had
+  opened. Open Changes and Compare with Active Editor land in their parent's
+  group too.
+
+### Changed
+
+- A row's buttons are a full-bleed band pinned to its right edge, and the row
+  opens the room for it under the pointer: the state mark now steps aside
+  instead of disappearing. A state you have to move the mouse away from to read
+  is one you have to remember rather than read. The same is true of a variant's
+  diff counts, which used to vanish for the close button.
+- One width for every band that closes a row: a bay's orders, a group header's
+  buttons and the fold that ends it. Square blocks with no rounded corners,
+  because a radius only means something on a shape with room around it.
+- The state mark is a bare glyph rather than a 22px box, so a clean row costs no
+  width at all and the marks of a column line up against each other.
+- A group header is a card: loose of the panel's edges, rounded and lying on the
+  list rather than cut into it. It sheds the stripe down its side, the rule under
+  it and the wash it carried when folded; the rows below keep their stripe.
+- An open header is a frame and a folded one is a box, and each is closed the way
+  it is: open, the bottom corners are square and the group's colour rides that
+  edge as a band against the rows it names; folded, all four corners round and
+  the colour moves to the ring, at a fraction so an identity does not read as a
+  state.
+- The ring reads the theme's widget border and falls back to nothing, where it
+  used to lead with the rule VS Code draws between sidebar sections over a fixed
+  grey. That token is a solid line, so behind a 1.25px ring it came out as a
+  heavy outline, and the grey gave a ring to themes that had asked for none.
+- Moving the focus from one editor group to another now reaches the panel at all.
+  A tab is active in ITS OWN group, so a split editor has one per group and none
+  of those flags moves when the focus does: the check that decided whether to
+  tell the view anything asked the tabs alone, and answered no.
+- A group's name is neutral, and its strength says which group holds the
+  foreground tab: the whole of the theme's selected-row colour on that one, a
+  fraction of it on the rest. It used to be written in the group's own hue, which stated the
+  thing the mark beside it and the band under it already state twice, and spent
+  the one property a name had left on it.
+- The group mark lines up with the icon column of the rows below. The two are
+  different sizes, so it is their centres that meet.
+
+- A bay no longer wears a stripe of its group's colour down its left edge. A row
+  inside a group already reads as being in it, and the stripe repeated that on
+  every row of every group. The colour lives on the header alone, which is also
+  why the block stopped carrying an attribute nothing read.
+- The fold moved to the header's right edge, where a repo card puts it, and its
+  arrow says what pressing it does rather than which state the group is in: down
+  on a folded header because pressing brings the rows back, up on an open one.
+- A group header is a tab stop, and Enter or Space on it folds the group. Its
+  three orders are hidden with `visibility` so they are not stops of their own
+  while unseen, and the route now lands on the header first.
+
+## [0.4.4] - 2026-09-08
+
+### Fixed
+
+- Two Claude Code conversations open at once only drew one row, and closing or
+  activating either one acted on the same tab. A bay without a URI took its id
+  from the panel's `viewType`, which names a KIND of panel and not a panel, so
+  two of them composed the same id. Each tab now carries a seat of its own. The
+  same collision hid a second markdown preview.
+- An unsaved workspace was named after its first folder, which in a multi-root
+  window says something false about the others. It is now called `Workspace`.
+
+### Changed
+
+- The activity bar icon is the `list-flat` codicon.
+- A group is marked with `collection` instead of a folder: a group is a
+  collection of editors, and the folder said what the row underneath already
+  says with its own file icon. The fold moved to a chevron next to it, which
+  says where pressing leads rather than which state the group is in.
+
 ## [0.4.3] - 2026-09-08
 
 ### Fixed
