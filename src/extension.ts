@@ -8,6 +8,7 @@ import { FileActionRegistry      } from './services/registry/FileActionRegistry'
 import { BayIconManager          } from './services/ui/BayIconManager';
 import { GroupCustomizationService } from './services/ui/GroupCustomizationService';
 import { ViewPrefs               } from './services/ui/ViewPrefs';
+import { ViewConfiguration       } from './services/ui/ViewConfiguration';
 import { ProductIconService      } from './services/ui/ProductIconService';
 import { ThemeService            } from './services/ui/ThemeService';
 import { CopilotService          } from './services/integration/CopilotService';
@@ -54,6 +55,11 @@ export async function activate(context: vscode.ExtensionContext) {
     const viewPrefs          = new ViewPrefs(context);
     context.subscriptions.push(viewPrefs);
 
+    // The six answers the view reads on every render, cached until a
+    // configuration change or the per-project layer moves one.
+    const viewConfiguration  = new ViewConfiguration(viewPrefs);
+    context.subscriptions.push(viewConfiguration);
+
     // Los glifos del panel siguen al pack de `workbench.productIconTheme`, como
     // el resto del workbench. Apagado (`bays.followProductIconTheme`) no lee
     // nada del disco.
@@ -77,7 +83,7 @@ export async function activate(context: vscode.ExtensionContext) {
       dragDropService,
       fileActionRegistry,
       groupActions,
-      viewPrefs,
+      viewConfiguration,
       productIcons,
     );
 

@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
-import { getConfiguration }     from '../constants/styles';
-import { ViewPrefs }            from '../services/ui/ViewPrefs';
+import { ViewConfiguration }    from '../services/ui/ViewConfiguration';
 import { ProductIconService }   from '../services/ui/ProductIconService';
 import { TIMINGS }              from '../constants/timings';
 import { Bay }                  from '../models/Bay';
-import { BayHelpers }           from '../models/BayHelpers';
 import { BayGroup }              from '../models/BayGroup';
 import { BayStateService }      from '../services/core/BayStateService';
 import { BayIconManager }       from '../services/ui/BayIconManager';
@@ -14,6 +12,7 @@ import { FileActionRegistry }   from '../services/registry/FileActionRegistry';
 import { Logger }               from '../platform/logger';
 import { activeGroupId } from '../platform/activeGroup';
 import { bayStateCode }         from '../utils/stateIndicator';
+import { VariantCloser }        from '../services/core/bay/VariantCloser';
 import { BaysHtmlBuilder }      from './BaysHtmlBuilder';
 import type { PendingIcon }     from './html';
 import { BayContextMenu }       from './BayContextMenu';
@@ -57,6 +56,7 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
   /** El cliente ha mandado su `ready`: antes de eso, un postMessage se pierde. */
   private _clientReady = false;
   private readonly htmlBuilder: BaysHtmlBuilder;
+  private readonly variantCloser: VariantCloser;
   private readonly contextMenu: BayContextMenu;
   private readonly groupActions: GroupActions;
 
@@ -69,10 +69,11 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     private readonly dragDropService: BayDragDropService,
     private readonly fileActionRegistry: FileActionRegistry,
     groupActions: GroupActions,
-    private readonly viewPrefs: ViewPrefs,
+    private readonly config: ViewConfiguration,
     private readonly productIcons: ProductIconService,
   ) {
     this.htmlBuilder  = new BaysHtmlBuilder(_extensionUri, iconManager, context, fileActionRegistry);
+    this.variantCloser = new VariantCloser(stateService);
     this.contextMenu  = new BayContextMenu(stateService, copilotService);
     this.groupActions = groupActions;
     context.subscriptions.push(
@@ -145,7 +146,7 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
   private render(): void {
     if (!this._view) { return; }
 
-    const config       = getConfiguration(this.viewPrefs);
+    const config       = this.config.current();
     const groups       = this.stateService.getGroups();
     const copilotReady = this.copilotService.isAvailable();
 
@@ -383,134 +384,11 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
       this.refresh();
       return;
     }
-    
-    Logger.log(`[Bays] === CLOSE VARIANT START: ${variant.metadata.label} ===`);
-    
-    // Verify it's actually a variant (has parentId)
-    if (!variant.metadata.sourceBayId) {
-      Logger.warn('[Bays] Not a variant (no parentId), closing normally: ' + bayId);
-      await variant.close();
-      return;
-    }
 
-    // Get parent bay BEFORE any operations
-    const parent = this.stateService.getBayById(variant.metadata.sourceBayId);
-    if (!parent) {
-      Logger.warn('[Bays] Parent bay not found: ' + variant.metadata.sourceBayId);
-      await variant.close();
-      return;
-    }
-
-    // Get hierarchy service
-    const hierarchyService = this.stateService.getHierarchyService();
-    if (!hierarchyService) {
-      Logger.warn('[Bays] Hierarchy service not available');
-      await variant.close();
-      return;
-    }
-
-    // Find the variant's native tab (diff)
-    const variantNativeTab = BayHelpers.findNativeTab(variant.metadata, variant.state);
-    if (!variantNativeTab) {
-      Logger.warn('[Bays] Variant native tab not found');
-      this.refresh();
-      return;
-    }
-
-    // Verify it's a diff tab
-    if (!(variantNativeTab.input instanceof vscode.TabInputTextDiff)) {
-      Logger.warn('[Bays] Not a diff tab, closing normally');
-      await variant.close();
-      return;
-    }
-
-    Logger.log(`[Bays] Variant diff URIs - original: ${variantNativeTab.input.original.toString()}`);
-    Logger.log(`[Bays] Variant diff URIs - modified: ${variantNativeTab.input.modified.toString()}`);
-    
-    // === FASE 0: PREVENCIÓN DE EVENTOS ===
-    // Marcar AMBOS (variant Y parent) como cierres intencionales
-    // Esto previene que BayEventService procese los eventos cuando VS Code los dispare
-    Logger.log(`[Bays] PHASE 0: Marking variant and parent as intentional closes`);
-    this.stateService.markAsIntentionalClose(variant.metadata.id);
-    this.stateService.markAsIntentionalClose(parent.metadata.id);
-
-    try {
-      // === FASE 1: ACTUALIZAR ESTADO INTERNO ===
-      // Actualizar jerarquía: desregistrar variant del parent
-      Logger.log(`[Bays] PHASE 1: Updating internal state`);
-      hierarchyService.detachVariantFromParentBay(variant.metadata.id, parent.metadata.id);
-
-      // Remover variant del estado interno (sin procesar jerarquía, ya lo hicimos)
-      this.stateService.removeBayFromState(variant.metadata.id);
-      Logger.log(`[Bays] Variant removed from state, parent childrenCount: ${parent.state.variantCount}`);
-
-      // === FASE 2: OPERACIÓN FÍSICA ===
-      // Cerrar el diff tab (VS Code puede cerrar también el parent)
-      Logger.log(`[Bays] PHASE 2: Closing diff tab physically`);
-      await vscode.window.tabGroups.close(variantNativeTab, true);
-      Logger.log(`[Bays] Close command completed`);
-
-      // === FASE 3: VERIFICAR REALIDAD FÍSICA Y CORREGIR ===
-      // Dar un momento a VS Code para procesar completamente
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      Logger.log(`[Bays] PHASE 3: Verifying physical state`);
-
-      // Verificar si el parent todavía existe físicamente en VS Code
-      const parentStillOpen = BayHelpers.findNativeTab(parent.metadata, parent.state);
-
-      if (!parentStillOpen && parent.metadata.uri) {
-        // Parent fue cerrado por VS Code (side effect del cierre del diff)
-        Logger.log(`[Bays] Parent was closed by VS Code, reopening: ${parent.metadata.label}`);
-
-        // Reabrir el parent en la misma posición
-        await vscode.window.showTextDocument(parent.metadata.uri, {
-          viewColumn: parent.state.viewColumn,
-          preview: false,
-          preserveFocus: true
-        });
-
-        Logger.log(`[Bays] Parent reopened successfully`);
-      } else if (parentStillOpen) {
-        Logger.log(`[Bays] Parent still open, no reopening needed`);
-      } else {
-        Logger.log(`[Bays] Parent has no URI, cannot reopen`);
-      }
-    } catch (error) {
-      Logger.error(`[Bays] Close variant failed for ${variant.metadata.label}`, error);
-    } finally {
-      // === FASE 4: LIMPIEZA (SIEMPRE) ===
-      // El polling se instala también si el cierre o la reapertura fallaron:
-      // sin este finally, un showTextDocument rechazado dejaba los markers de
-      // intentionalCloses pegados para siempre y todos los cierres externos
-      // futuros de estas bays se ignoraban en silencio.
-      // Una vez confirmado que el parent sigue abierto como native tab, VS Code
-      // terminó de procesar los eventos en cascada. Máximo 3000ms de safety net.
-      Logger.log(`[Bays] PHASE 4: Polling until VS Code events settle`);
-      const POLL_INTERVAL = 150;
-      const MAX_WAIT      = 3000;
-      let elapsed         = 0;
-      const parentMeta    = parent.metadata;
-      const parentState   = parent.state;
-
-      const poll = setInterval(() => {
-        elapsed += POLL_INTERVAL;
-        const parentNativeTab = BayHelpers.findNativeTab(parentMeta, parentState);
-        const settled         = !!parentNativeTab || elapsed >= MAX_WAIT;
-
-        if (settled) {
-          clearInterval(poll);
-          this.stateService.clearIntentionalClose(variant.metadata.id);
-          this.stateService.clearIntentionalClose(parent.metadata.id);
-          Logger.log(`[Bays] Markers cleared after ${elapsed}ms (native tab ${parentNativeTab ? 'confirmed open' : 'not found — max wait reached'})`);
-        }
-      }, POLL_INTERVAL);
-
-      // Notificar cambio de UI
-      this.stateService.notifyChange();
-    }
-
-    Logger.log(`[Bays] === CLOSE VARIANT END: ${variant.metadata.label} ===`);
+    // The whole sequence lives in `VariantCloser`: closing a diff can take its
+    // source with it, and putting it back is four phases and a poll, none of
+    // which is dispatching a message.
+    if (await this.variantCloser.close(variant) === 'resync') { this.refresh(); }
   }
 
   private async handleAddToChat(bayId: string): Promise<void> {
