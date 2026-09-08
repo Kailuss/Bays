@@ -16,6 +16,18 @@
   cursor: pointer;
   /* The band is positioned against this row, and clipped by it. */
   position: relative;
+  /* What a row does stays inside a row. Hovering one transitions its
+     `padding-right`, which is LAYOUT, and the path pass writes text into it;
+     without this, each of those invalidates the whole list, and the list is one
+     row per open editor.
+
+     `layout style` and not `paint`: painting is not contained on purpose, so
+     nothing here has to know whether a focus ring, a badge or a future mark
+     reaches past the row's own box. And it goes on the ROW and never on
+     `.bay-block`, which is what the drag clone is — containment would make it
+     the containing block for its own `position: fixed`, and the clone would stop
+     following the pointer. */
+  contain: layout style;
   /* That right padding is what OPENS for it: transitioning it is what makes the
      state mark step aside instead of jumping. */
   transition:
