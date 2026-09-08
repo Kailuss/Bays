@@ -7,6 +7,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.9] - 2026-09-08
+
+### Changed
+
+- The rule between rows stops short of both edges, by the same margin a group
+  header keeps.
+- The last row of a group carries no rule under it.
+
+## [0.4.8] - 2026-09-08
+
+### Changed
+
+- The activity bar mark is the `collection` codicon.
+
 ## [0.4.7] - 2026-09-08
 
 ### Added

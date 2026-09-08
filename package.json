@@ -2,7 +2,7 @@
   "name": "bays",
   "displayName": "Bays",
   "description": "%description%",
-  "version": "0.4.7",
+  "version": "0.4.9",
   "publisher": "Lovervoid",
   "license": "MIT",
   "icon": "icon.png",
@@ -53,7 +53,7 @@
         {
           "id": "baysContainer",
           "title": "%container.baysContainer%",
-          "icon": "$(list-flat)"
+          "icon": "$(collection)"
         }
       ]
     },
