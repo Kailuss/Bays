@@ -102,15 +102,31 @@ function bundleCss(mainCssPath, outputPath) {
 		bundledCss = mainContent;
 	}
 
-	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-	fs.writeFileSync(outputPath, bundledCss);
-
 	// Cota inferior al tamaño: es lo único que mira dist/, y un bundle que se
 	// queda en nada es exactamente lo que un build en verde no puede producir.
+	// Se mide sobre lo CONCATENADO y no sobre lo que se escribe: minificado, el
+	// mismo bundle entero baja de esa cifra y la comprobación dejaría de decir
+	// nada.
 	if (bundledCss.length < 2000) {
 		console.error(`[build] The CSS bundle came out at ${bundledCss.length} bytes: something did not get in`);
 		process.exitCode = 1;
 	}
+
+	// Se minifica en producción y no en desarrollo. Es un `<link>` del `<head>`
+	// del shell, así que bloquea el primer pintado del webview; y en desarrollo
+	// el bundle se lee a mano lo bastante a menudo como para que compense dejarlo
+	// legible. esbuild conserva el orden de las reglas, que es de lo que depende
+	// `states`/`edit` yendo al final (ver `checkCssOrder`).
+	let output = bundledCss;
+	if (production) {
+		const minified = esbuild.transformSync(bundledCss, { loader: 'css', minify: true });
+		output = minified.code;
+		const saved = Math.round((1 - output.length / bundledCss.length) * 100);
+		console.log(`[build] CSS minified: ${bundledCss.length} → ${output.length} bytes (-${saved}%)`);
+	}
+
+	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+	fs.writeFileSync(outputPath, output);
 
 	console.log(`[build] CSS bundled: ${outputPath}`);
 }
