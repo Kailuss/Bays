@@ -91,7 +91,7 @@ export abstract class BayActions {
   }
 
   async moveToGroup(target: vscode.ViewColumn): Promise<void> {
-    return actions.moveToGroup(this.metadata, this.state, target, () => this.close());
+    return actions.moveToGroup(this.metadata, this.state, target);
   }
 
   //- ACTIVATION ACTIONS

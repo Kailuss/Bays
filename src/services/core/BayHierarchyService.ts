@@ -128,6 +128,47 @@ export class BayHierarchyService {
   }
 
   /**
+   * Mueve una bay Y sus variantes al grupo destino.
+   *
+   * Es el gemelo de `closeBayWithVariants`, y por lo mismo: una bay ES su fila
+   * más sus variantes, así que las dos órdenes que actúan sobre el bloque entero
+   * se componen aquí y no en el modelo, que no alcanza la jerarquía.
+   *
+   * Y es la ley de *una variante NACE EN EL GRUPO DE SU PADRE* impuesta en el
+   * único sitio donde faltaba. Se cumplía al NACER y no al MOVERSE, así que
+   * arrastrar una bay a otro grupo dejaba sus diffs y su previa colgando bajo la
+   * cabecera de la que se iba: filas huérfanas allí, y el padre ofreciendo otra
+   * vez el botón que las abre porque para él no ha aparecido ninguna. Que era
+   * exactamente lo que la ley existe para que no se vea.
+   *
+   * **Las variantes se recogen ANTES de mover nada.** El id de una bay lleva
+   * dentro su columna, así que en cuanto el padre aterriza el suyo ha cambiado y
+   * `fetchVariants` no encontraría a nadie. Lo recogido son objetos del modelo,
+   * pero lo que la mudanza usa de ellos es dónde está su tab NATIVA, así que un
+   * resync que aterrice en medio puede dejarlos desenganchados del estado sin
+   * dejar de moverlos.
+   *
+   * **Y el padre va PRIMERO**, al revés que en el cierre —donde el orden lo
+   * decide quién desregistra a quién—: así el grupo destino nunca enseña una
+   * variante sin la fila de la que cuelga, que es la fila huérfana que esto
+   * viene a quitar. Lo que se ve en medio es la misma huérfana en el grupo del
+   * que se va, y ésa está a punto de irse.
+   *
+   * @param target La columna de destino.
+   */
+  async moveBayWithVariants(bay: Bay, target: number): Promise<void> {
+    const variants = bay.state.hasVariant ? this.fetchVariants(bay.metadata.id) : [];
+
+    await bay.moveToGroup(target);
+
+    // En serie y nunca a la vez: cada mudanza pone su tab DELANTE y mueve la
+    // activa, así que dos solapadas se pisarían el foco la una a la otra.
+    for (const variant of variants) {
+      await variant.moveToGroup(target);
+    }
+  }
+
+  /**
    * Recalculates children count for all parents.
    * Useful after full synchronization or when inconsistencies exist.
    */

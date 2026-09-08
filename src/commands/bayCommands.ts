@@ -103,7 +103,13 @@ export function registerBayCommands(
         placeHolder: vscode.l10n.t('Select target group'),
       });
 
-      if (selected) { await bay.moveToGroup(selected.viewColumn); }
+      // Con sus variantes, como `bays.closeBay` unas líneas más arriba y por lo
+      // mismo: la orden actúa sobre la bay, y una bay es su fila más lo que
+      // cuelga de ella.
+      if (selected) {
+        await (stateService.getHierarchyService()?.moveBayWithVariants(bay, selected.viewColumn)
+               ?? bay.moveToGroup(selected.viewColumn));
+      }
     }),
 
     // Contributed in package.json and reachable via keybindings / programmatic

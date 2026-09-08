@@ -124,20 +124,27 @@ export async function moveToGroup(
   metadata: BayMetadata,
   state: BayState,
   target: vscode.ViewColumn,
-  closeFn: () => Promise<void>
 ): Promise<void> {
-  // Webview bays (Claude Code, Simple Browser, Settings…) have no URI to reopen,
-  // so close+reopen is impossible. Move the live tab instead: focus it, then run
-  // the native "move editor to group N" command. Preserves the webview's state
-  // (no teardown) and relocates it to the target group.
-  if (!metadata.uri) {
-    await BayHelpers.activateByNativeTab(metadata, state);
-    await BayHelpers.moveActiveEditorToGroup(target);
-    return;
-  }
-  await closeFn();
-  await vscode.commands.executeCommand('vscode.open', metadata.uri, {
-    viewColumn: target,
-    preview: state.isPreview,
-  });
+  // The LIVE tab is moved, whatever kind of tab it is, and NOTHING is closed:
+  // focus it, then run the native "move editor to group N" command.
+  //
+  // It used to do that only for a webview, which has no URI to reopen, and to
+  // close a file bay and reopen it by URI in the target group. Three things say
+  // one mechanism is the answer for all of them:
+  //
+  // A DIFF has a URI and is not a file. Reopening it by that URI serves the
+  // plain document, so a variant relocated that way arrives as something else —
+  // and moving a bay has to move its variants (`moveBayWithVariants`), which is
+  // what made the difference impossible to keep ignoring.
+  //
+  // A close is not free. Closing a source whose PREVIEW is still open reads to
+  // `BayEventService` as an external close, so it fires the full resync that
+  // reopens a source left without its parent — against a move that is in the
+  // middle of relocating that very source.
+  //
+  // And what a move owes is the TAB. A native move keeps it whole: its preview
+  // state, a webview's contents, the two sides of a diff. Close and reopen
+  // rebuilds an approximation of it out of a URI and a flag.
+  await BayHelpers.activateByNativeTab(metadata, state);
+  await BayHelpers.moveActiveEditorToGroup(target);
 }

@@ -121,10 +121,13 @@ export class BayDragDropService {
     // Restriction: pinned bays cannot be moved
     if (sourceBay.state.isPinned) { return false; }
 
-    // Restriction: a locked group doesn't let its bays leave. Moving between
-    // groups closes the bay in the source and reopens it in the target, so
-    // allowing it would be a back door to the close button the lock removed.
-    // Reordering INSIDE the group stays allowed — nothing closes there.
+    // Restriction: a locked group doesn't let its bays leave, which is what the
+    // lock says and all it has to say. It used to be argued from the mechanics —
+    // a move closed the bay in the source and reopened it in the target, so it
+    // was a back door to the close button the lock takes away — and that stopped
+    // being true when the move became a relocation of the live tab. The
+    // restriction did not: taking a bay out of a locked group is taking it out.
+    // Reordering INSIDE the group stays allowed; nothing leaves there.
     const sourceGroup = this.stateService.getGroup(sourceBay.state.groupId);
     if (sourceGroup?.isLocked) {
       Logger.log('[DragDrop] Blocked: source group is locked');
@@ -142,11 +145,21 @@ export class BayDragDropService {
       }
     }
 
-    // Relocate to the destination group. File bays close+reopen by URI; webview
-    // bays move the live tab natively (see actions/moveToGroup). Either way the
-    // bay ID changes (it embeds viewColumn) and native tab events rebuild the view.
+    // Relocate to the destination group, VARIANTS INCLUDED. What travels is the
+    // block — a bay with its diffs and its preview under it — so the move is
+    // composed by the hierarchy service, the same way closing is: the model does
+    // not reach the hierarchy, and a bay is its row plus what hangs off it.
+    //
+    // Without that, dragging a bay to another group left its variants under the
+    // header it came from: orphan rows there, and the bay offering the button
+    // that opens them again because as far as it knows none ever appeared.
+    //
+    // Every row relocates as a live tab, so the bay IDs change (they embed the
+    // viewColumn) and native tab events rebuild the view.
     try {
-      await sourceBay.moveToGroup(targetGroupId);
+      const hierarchy = this.stateService.getHierarchyService();
+      await (hierarchy?.moveBayWithVariants(sourceBay, targetGroupId)
+             ?? sourceBay.moveToGroup(targetGroupId));
       return true;
     } catch (error) {
       Logger.error('[BayDragDrop] Failed to move bay between groups:', error);
