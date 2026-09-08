@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.14] - 2026-09-09
+
+### Changed
+
+- A group folds and unfolds with a transition: its rows roll up from the bottom
+  instead of vanishing.
+- The three rules that divide the extension icon's rows are darker.
+
 ## [0.4.13] - 2026-09-09
 
 ### Changed
