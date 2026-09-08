@@ -1,136 +1,306 @@
 /* ===== Group header ===== */
 
-/* Paleta de grupo. Se declara una sola vez para los dos atributos que la usan:
-   `data-color` en la cabecera y `data-group-color` en cada .bay-block. Los
-   valores son colores registrados por VS Code, así que el tinte sigue al tema
-   activo en lugar de fijar un hex (el fallback sólo cubre temas sin charts.*). */
-[data-color="blue"],   [data-group-color="blue"]   { --group-color: var(--vscode-charts-blue,   #3794ff); }
-[data-color="green"],  [data-group-color="green"]  { --group-color: var(--vscode-charts-green,  #89d185); }
-[data-color="yellow"], [data-group-color="yellow"] { --group-color: var(--vscode-charts-yellow, #cca700); }
-[data-color="orange"], [data-group-color="orange"] { --group-color: var(--vscode-charts-orange, #d18616); }
-[data-color="red"],    [data-group-color="red"]    { --group-color: var(--vscode-charts-red,    #f14c4c); }
-[data-color="purple"], [data-group-color="purple"] { --group-color: var(--vscode-charts-purple, #b180d7); }
+/* The group palette. Declared once, for the one attribute that carries it:
+   `data-color` on the header. The values are colours VS Code registers, so the
+   tint follows the active theme instead of pinning a hex (the fallback only
+   covers themes with no charts.*).
 
+   It used to be declared for a second attribute as well, `data-group-color` on
+   every bay block, which drew a stripe down each row's left edge. The hue now
+   lives on the header alone: a row inside a group already reads as being in it,
+   and a stripe repeating that on every row of every group was the loudest thing
+   in the list. */
+[data-color="blue"]   { --group-color: var(--vscode-charts-blue,   #3794ff); }
+[data-color="green"]  { --group-color: var(--vscode-charts-green,  #89d185); }
+[data-color="yellow"] { --group-color: var(--vscode-charts-yellow, #cca700); }
+[data-color="orange"] { --group-color: var(--vscode-charts-orange, #d18616); }
+[data-color="red"]    { --group-color: var(--vscode-charts-red,    #f14c4c); }
+[data-color="purple"] { --group-color: var(--vscode-charts-purple, #b180d7); }
+
+/* === The header, as a CARD ==================================================
+
+   Loose of the panel's edges, ringed and rounded, lying ON the list rather than
+   cut into it. It is deliberately NOT the workbench's own section header — a
+   band tallied edge to edge with a rule under it and spaced small caps — because
+   a second one of those under the view's own reads as a second layer of chrome.
+
+   What closes it on the right is the FOLD, full bleed against the rim, and
+   before it the three orders. One run of squares, one width
+   (`--bays-row-action`).
+
+   The height is Atria's path bar's own (`--bays-header-height`), so the bands
+   that close it come out 24 wide by 28 tall — the same figure the magnifier
+   takes at the end of that strip. */
 .group-header {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  /* Sin padding izquierdo: lo aporta el propio .group-toggle, que hace de
-     twisty y arranca pegado al borde como en cualquier árbol. */
-  padding: 0 2px 0 0;
-  font-size: 11px;
+  align-items: stretch;
+  height: var(--bays-header-height);
+  /* Left only: what closes the strip on the right is a band that runs to the edge
+     full bleed, and padding there would leave it floating short of it.
+
+     The figure is what puts the group's MARK on the same column as a bay row's
+     ICON, and the two are different sizes, so it is their CENTRES that have to
+     meet — aligning left edges would leave the smaller one looking indented. A
+     row's icon slot starts at its own 8px of padding and is 22 wide, so that
+     centre is at 19; the mark is 14, so half of it is 7; and this strip is
+     already inset by its own margin. Spelled as the arithmetic rather than as
+     the 6px it comes to, so that moving any of the three moves the mark with
+     them instead of silently off the column. */
+  padding-left: calc(8px + 11px - 7px - var(--bays-card-gap));
+  /* The BOTTOM corners are square: an open header is a frame that opens onto the
+     rows it names, so it rounds only the edge that faces away from them and the
+     two read as one shape without a line between them to say so — which there
+     could not be, since the rows run out from under it. Folded it closes on all
+     four (below). */
+  border-radius: var(--bays-card-radius) var(--bays-card-radius) 0 0;
+  /* Loose on all four sides, and the bottom one carries the accent's width on
+     top of the gap: that band is painted PAST the box, so without the room it
+     would lie on the first row below it. The width lives in one place because
+     the two have to move together — and because folding the header is expressed
+     by setting it to zero, which takes the band and its gutter away at once. */
+  --bays-header-accent: 1.5px;
+  margin: var(--bays-card-gap) var(--bays-card-gap) calc(var(--bays-card-gap) + var(--bays-header-accent));
+  /* Which the fold needs: it runs full bleed into a corner that now carries a
+     curve, so the box hands it its own edge instead of the button having to know
+     there is one. The card's own shadows are not clipped by this — `overflow`
+     cuts descendants, never the element's own paint. */
+  overflow: hidden;
+  /* The VIEW's own size, the one the rows below are set in, and heavier. A
+     heading a point under what it heads reads as a footer of it. Nothing here is
+     measured — the name is cut by CSS — so a bolder line costs no layout anyone
+     has to agree with. */
+  font-size: var(--vscode-font-size);
   font-weight: 600;
-  letter-spacing: 0.4px;
   color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-foreground));
-  background: var(--vscode-sideBarSectionHeader-background, transparent);
-  opacity: 0.8;
-  border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border, rgba(0,0,0,0.1));
-  /* Franja de color a la izquierda. Es un borde real, no una sombra `inset`:
-     empuja el contenido hacia la derecha en vez de pintarse por debajo. */
-  border-left: 2px solid var(--group-color, transparent);
+  /* What the NAME is worth, and it is the one thing on this line with two
+     strengths: this colour whole on the group being worked in, and a fraction of
+     it on the rest. One colour in two strengths, so a stack of headers reads as
+     one being current and the others waiting — rather than as two different
+     colours of name, which is what a hue on the name made it.
+     `list.activeSelectionForeground` is what the workbench writes a selected row
+     in, which is exactly what this is. See the light-theme answer at the foot of
+     this file. */
+  --bays-name-active: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+  background: var(--bays-section-surface);
+  /* The accent rides the BOTTOM edge, against the rows the header names: the
+     colour belongs to the group those rows hang from, so it closes the strip on
+     the side where the two meet. The ring on the other three stays the theme's
+     NEUTRAL hairline — that hue has one place on this strip, and a ring in it
+     would be the same fact stated twice around one box.
+
+     It is a SHADOW and not a border: a border is laid out, so it would eat its
+     width out of the header's height and leave the run of bands that much
+     shorter. A shadow is painted past the border box, so the strip keeps its
+     whole height and the accent lands beyond it.
+
+     It is listed FIRST of the three, which is what keeps it visible at all:
+     shadows paint in source order with the first on TOP, and the ring reaches
+     1.25px past every edge — declared after it, the ring's own hairline would
+     cover all but a quarter pixel of the accent along the bottom. First, the
+     accent covers the ring there instead, so the strip is closed by a hairline
+     on three sides and by the group's colour on the one that faces its rows.
+
+     At full strength, unlike the ring a folded header takes: this is a band of
+     its own with an edge to be read against, not an outline that has to stay an
+     outline. A group with no colour falls back to the hairline, so the strip is
+     closed the same way all round.
+
+     The drop shadow is the third and lands under the accent's own gutter, so
+     nothing of it falls on the first row. */
+  box-shadow:
+    0 var(--bays-header-accent) 0 0 var(--group-color, var(--bays-card-border)),
+    0 0 0 var(--bays-card-ring) var(--bays-card-border),
+    0 2px 6px var(--bays-card-lift);
+  /* The whole header collapses on a click, the name included. */
+  cursor: pointer;
 }
 
-/* Twisty de plegado. Siempre visible y sin fondo — ni en reposo ni en hover:
-   es un indicador de estado antes que un botón, así que sólo cambia de opacidad.
-   Ancho generoso para que el chevron respire y sea un objetivo de clic cómodo. */
-.group-toggle {
-  flex-shrink: 0;
+/* FOLDED, it is no longer a frame but a box: there are no rows running out from
+   under it, so it rounds all four corners and the accent goes with them — a band
+   pointing at rows that are not there would be sitting on the next group's
+   header instead.
+
+   The hue moves to the RING, which is where it can still close a box on four
+   sides, and at a FRACTION: a hairline of the whole hue reads as a selected or
+   focused box, which is a state, and this is an identity. The accent above can
+   be whole precisely because it is a band and not an outline.
+
+   Diluted with `transparent` and not with a surface: the ring sits over the
+   strip and over the list behind it, so mixing into either would leave it a
+   shade off along one of its sides. The plain hairline is declared FIRST and
+   kept as the reserve, since `color-mix` invalidates the whole declaration where
+   it is unsupported and a header with no outline stops reading as a card.
+
+   Setting the accent's width to zero is what takes both the band and the gutter
+   it was painting in: the margin above is derived from it, so the two cannot
+   drift. */
+.group-header.collapsed {
+  --bays-header-accent: 0px;
+  border-radius: var(--bays-card-radius);
+  box-shadow:
+    0 0 0 var(--bays-card-ring) var(--bays-card-border),
+    0 2px 6px var(--bays-card-lift);
+  box-shadow:
+    0 0 0 var(--bays-card-ring) color-mix(in srgb, var(--group-color, var(--bays-card-border)) 40%, transparent),
+    0 2px 6px var(--bays-card-lift);
+}
+
+/* === The bands that close it ===============================================
+
+   Four places, one shape: the three orders and the FOLD. A square block the
+   height of its row with no corners rounded — a radius only means something on
+   a shape with room around it, and these have none above or below: they close
+   the row against the card's rim the way a bay's own actions do. */
+.group-btn,
+.group-fold {
+  flex: none;
+  width: var(--bays-row-action);
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 22px;
   padding: 0;
   border: none;
-  background: none;
+  border-radius: 0;
+  background: transparent;
   cursor: pointer;
-  color: inherit;
-  opacity: 0.7;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  /* The row's own type and not the one a UA gives a button: `font` is a
+     shorthand, so it takes the size with it and the glyph is sized below. */
+  font: inherit;
+  transition:
+    background-color var(--bays-row-action-ms) ease,
+    opacity          var(--bays-row-action-ms) ease;
 }
 
-.group-toggle:hover { opacity: 1; }
-
-.group-toggle .codicon {
-  font-size: 14px;
+.group-btn .codicon,
+.group-fold .codicon {
+  flex: none;
+  font-size: 13px;
   line-height: 1;
 }
 
+.group-btn:hover,
+.group-fold:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.group-btn:focus-visible,
+.group-fold:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+/* The group's mark. Not a control — it is not pressed and takes no hover — so it
+   is read at the group's own colour like the name beside it: between the two they
+   are what names the group at a glance. The click passes through it: the fold
+   hangs off the whole header, and this box cannot open a dead spot in the middle
+   of it. */
+.group-mark {
+  flex: none;
+  align-self: center;
+  font-size: 14px;
+  line-height: 1;
+  margin-right: 6px;
+  pointer-events: none;
+  color: var(--group-color, inherit);
+}
+
+/* The flexible half of the line: it takes whatever the bands on the right leave
+   and cuts what does not fit.
+
+   NEUTRAL, and that is the point: which group this is is said by the MARK beside
+   it and by the band under it, both in the group's own hue, so a name in that
+   hue would be the same fact stated a third time — and it would spend the one
+   property a name has left on something already answered twice. What the name
+   says instead is which group is being WORKED IN, and it says it with strength.
+
+   MIXED with the strip's surface and not an alpha: what lies behind this line is
+   the card, and a translucent name would let whatever the theme puts there tint
+   it. The plain value is the reserve, since `color-mix` invalidates the whole
+   declaration where it is unsupported — and it errs on the loud side, which is
+   the safe one for a name. */
 .group-label {
   flex: 1 1 auto;
+  align-self: center;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  /* Toda la cabecera colapsa al hacer clic, el nombre incluido. */
-  cursor: pointer;
-  /* El nombre lleva puesto el color del grupo: lo identifica de un vistazo sin
-     depender de la franja. */
-  color: var(--group-color, inherit);
+  color: var(--bays-name-active);
+  color: color-mix(in srgb, var(--bays-name-active) 56%, var(--bays-section-surface));
 }
 
+/* The group holding the focused tab: the same colour, whole. */
+.group-header.current .group-label {
+  color: var(--bays-name-active);
+}
+
+/* `list.activeSelectionForeground` is drawn against the selection's own colour,
+   so light themes define it white as well — with no background under it the name
+   would go invisible rather than stand out. There the strongest text the theme
+   has is the editor's own foreground.
+   Answered through the one property both strengths are made of, so it reaches
+   the resting name at its fraction and the current one whole with a single
+   declaration. The high-contrast light kind carries no `vscode-light` class of
+   its own, so both are named. */
+body.vscode-light .group-header,
+body.vscode-high-contrast-light .group-header {
+  --bays-name-active: var(--vscode-editor-foreground, var(--vscode-foreground));
+}
+
+/* The three orders abut each other and the fold: one run of bands, no gaps. */
 .group-actions {
   display: flex;
-  align-items: center;
-  gap: 1px;
-  flex-shrink: 0;
+  align-items: stretch;
+  flex: none;
 }
 
-/* Group action buttons — same style as view-header-btn.
-   La opacidad va en cada botón, no en el contenedor: así el candado puede
-   quedarse visible sin hover cuando el grupo está bloqueado. */
+/* The FOLD is deliberately absent from what follows: it is the one control on
+   this header that reports a STATE, so it is drawn at all times. A folded header
+   whose fold only appeared under the pointer would be a header whose rows had
+   vanished with nothing saying why, and indistinguishable from one with no rows
+   at all. Its arrow says what PRESSING does rather than which state the group is
+   in — down on a folded header because pressing brings the rows back, up on an
+   open one because pressing takes them away.
+
+   The three orders arrive with the pointer and their room is set aside from the
+   start: `visibility` and never `display`, so a header has the same shape
+   whether or not it is being pointed at, and the name beside them is not cut a
+   different way under the cursor. What comes and goes is the INK.
+
+   The room costs nothing here because the label is the flexible half of the
+   line: reserving it moves nothing.
+
+   `visibility` also keeps a hidden button off the tab route while leaving it
+   reachable — the header's own `:focus-visible` brings the run into view, and by
+   then Tab has somewhere to land. */
 .group-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  padding: 0;
-  color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  font-size: 14px;
-  font-family: var(--vscode-font-family);
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: normal;
-  line-height: 1;
+  visibility: hidden;
   opacity: 0;
-  transition: opacity 150ms ease;
 }
 
-.group-header:hover .group-btn { opacity: 0.8; }
+/* `:focus-visible` on the header and never `:focus-within` — a click focuses it,
+   which would leave the band drawn on the last header pressed.
 
-/* Bloqueado, el candado no espera al hover: es el único aviso de que a las bays
-   de este grupo les falta la X de cerrar. */
-.group-header[data-locked="true"] .group-lock-btn { opacity: 0.9; }
-
-/* Calificado con .group-header para ganarle en especificidad a la regla del
-   candado bloqueado, que si no dejaría el botón a 0.9 incluso bajo el cursor. */
-.group-header .group-btn:hover {
-  background : var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31));
-  opacity    : 1;
+   The `:has()` is not spare: once Tab moves into a revealed button the HEADER
+   stops matching `:focus-visible`, and without it the band would hide again
+   under a button that is still on screen and focused. */
+.group-header:hover .group-btn,
+.group-header:focus-visible .group-btn,
+.group-header:has(.group-btn:focus-visible) .group-btn {
+  visibility: visible;
+  opacity: 1;
 }
 
-/* Codicon spans inside group buttons */
-.group-btn .codicon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  line-height: 1;
-  width: 14px;
-  height: 14px;
+.group-header:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 
-.group-header.collapsed {
-  opacity: 0.5;
-}
-
-/* Las bays heredan la franja del grupo al que pertenecen. Mismo borde real que
-   la cabecera, para que el contenido de ambos arranque en la misma vertical. */
-.bay-block[data-group-color] {
-  border-left: 2px solid var(--group-color);
+/* Locked, the padlock does not wait for the pointer: it is the only notice that
+   the bays of this group are missing their close button. */
+.group-header[data-locked="true"] .group-lock-btn {
+  visibility: visible;
+  opacity: 1;
 }

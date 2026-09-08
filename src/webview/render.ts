@@ -55,12 +55,14 @@ function buildables(sections: GroupSection[], layout: RowLayout): Buildable[] {
     for (const bay of section.bays) {
       out.push({
         key      : `bay:${bay.id}`,
-        // La firma lleva el color del grupo y los dos ajustes de disposición
-        // además del modelo: los tres cambian lo que la fila dibuja sin cambiar
-        // nada de la bay, y sin ellos un cambio de color o del modo compacto
-        // dejaría los bloques intactos.
-        signature: JSON.stringify([bay, header?.color, layout]),
-        build    : () => buildBayBlock(bay, layout, header?.color),
+        // La firma lleva los dos ajustes de disposición además del modelo: los
+        // dos cambian lo que la fila dibuja sin cambiar nada de la bay, y sin
+        // ellos un cambio del modo compacto dejaría los bloques intactos.
+        // The group's COLOUR is no longer in it: a block stopped drawing with it
+        // when the stripe down its left edge went, so a recolour rebuilt every
+        // row of the group to produce the same markup.
+        signature: JSON.stringify([bay, layout]),
+        build    : () => buildBayBlock(bay, layout),
       });
     }
   }

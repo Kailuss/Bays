@@ -23,10 +23,14 @@ function post(message: WebviewToHostMessage): void {
 function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
   header.classList.toggle('collapsed', collapsed);
 
-  const icon = header.querySelector('[data-action="toggleGroup"] .codicon');
+  // Only the FOLD moves: the group's mark says what it is and does not change
+  // when its rows are hidden. The whole pair is removed and the right one added,
+  // rather than toggling both: were the two names ever equal, the second toggle
+  // would undo the first and no glyph would be drawn at all.
+  const icon = header.querySelector('.group-fold .codicon');
   if (icon) {
-    icon.classList.toggle(`codicon-${ICONS.group.expanded}`,  !collapsed);
-    icon.classList.toggle(`codicon-${ICONS.group.collapsed}`, collapsed);
+    icon.classList.remove(`codicon-${ICONS.group.foldExpanded}`, `codicon-${ICONS.group.foldCollapsed}`);
+    icon.classList.add(`codicon-${collapsed ? ICONS.group.foldCollapsed : ICONS.group.foldExpanded}`);
   }
 
   let sibling = header.nextElementSibling;
@@ -38,7 +42,7 @@ function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
 
 // Flip a header's collapsed state and persist it so the next full rebuild can
 // re-apply it (collapsed state lives only in the DOM otherwise). Shared by the
-// twisty button and a plain click anywhere on the header.
+// fold button and a plain click anywhere on the header.
 function toggleGroupCollapsed(header: HTMLElement | null): void {
   if (!header) { return; }
   const isCollapsed = !header.classList.contains('collapsed');
@@ -200,13 +204,29 @@ export function initInteractions(): void {
     }
 
     // Un clic en cualquier parte de la cabecera (salvo sus botones de acción)
-    // colapsa o expande el grupo — el twisty es sólo el ancla visual.
+    // colapsa o expande el grupo — el fold es sólo el ancla visual.
     const header = target.closest<HTMLElement>('.group-header');
     if (header) { toggleGroupCollapsed(header); return; }
 
     const bay = target.closest<HTMLElement>('.bay');
     const bayId = bay?.dataset.bayId;
     if (bayId) { post({ type: 'openBay', bayId }); }
+  });
+
+  // Enter or Space on a focused header folds it, which is what a click anywhere
+  // on it already does. A `<div tabindex="0">` synthesises no click of its own
+  // — only a real button does — so without this the header would be a tab stop
+  // that answers nothing, and the fold would have no keyboard route at all.
+  //
+  // Only when the header ITSELF has the focus: once Tab has moved into one of
+  // its buttons, Enter belongs to that button.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') { return; }
+    const header = e.target instanceof HTMLElement ? e.target : null;
+    if (!header?.classList.contains('group-header')) { return; }
+    // Space would scroll the list otherwise.
+    e.preventDefault();
+    toggleGroupCollapsed(header);
   });
 
   document.addEventListener('contextmenu', e => {

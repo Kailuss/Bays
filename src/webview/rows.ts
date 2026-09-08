@@ -130,9 +130,28 @@ function buildBayRow(bay: BayView, layout: RowLayout): HTMLDivElement {
   }
   if (bay.canChat)  { actions.appendChild(actionButton('addToChat', bay.id, ICONS.row.chat, t('Add to Copilot Chat'))); }
   if (bay.canClose) { actions.appendChild(actionButton('closeBay',  bay.id, ICONS.row.close, t('Close'))); }
-  row.appendChild(actions);
+  attachActions(row, actions);
 
   return row;
+}
+
+/**
+ * Hangs the band of orders off a row, and tells the row how wide it is.
+ *
+ * The band is out of flow, so the row cannot learn its width from the layout:
+ * what opens the room under the pointer is the row's own `padding-right`, and
+ * that number is the COUNT of buttons times one band width. Unlike a pinned row
+ * in Atria — one button, one width, no slots to count — a bay carries between
+ * zero and three, so the count is written here and read back by the stylesheet.
+ *
+ * An EMPTY band is not appended at all: a row with no orders must not open a
+ * padding for buttons that are not coming, and `.bay:has(.bay-actions)` is what
+ * says so.
+ */
+function attachActions(row: HTMLElement, actions: HTMLElement): void {
+  if (actions.childElementCount === 0) { return; }
+  row.style.setProperty('--bay-actions', String(actions.childElementCount));
+  row.appendChild(actions);
 }
 
 function buildVariantRow(variant: VariantView): HTMLDivElement {
@@ -166,26 +185,24 @@ function buildVariantRow(variant: VariantView): HTMLDivElement {
     const action = variant.orphan ? 'closeBay' : 'closeVariant';
     actions.appendChild(actionButton(action, variant.id, ICONS.row.closeVariant, t('Close variant')));
   }
-  row.appendChild(actions);
+  attachActions(row, actions);
 
   return row;
 }
 
 /**
- * El bloque de una bay: la unidad del drag & drop, con la fila y sus variantes
- * dentro. El acento de color viaja en el BLOQUE y no en la cabecera, para que
- * las filas se lean como pertenecientes al grupo también al hacer scroll.
+ * A bay's block: the unit of drag and drop, with the row and its variants in it.
+ *
+ * It no longer carries its group's colour. That colour was written here so every
+ * row could wear a stripe down its left edge; the hue lives on the header alone
+ * now, and an attribute nothing reads is a fact in the DOM that the next reader
+ * would take for one that means something.
  */
-export function buildBayBlock(
-  bay: BayView,
-  layout: RowLayout,
-  color: GroupView['color'] | undefined,
-): HTMLDivElement {
+export function buildBayBlock(bay: BayView, layout: RowLayout): HTMLDivElement {
   const block = el('div', 'bay-block');
   block.dataset.bayId  = bay.id;
   block.dataset.pinned = String(bay.pinned);
   block.dataset.groupid = String(bay.groupId);
-  if (color) { block.dataset.groupColor = color; }
 
   if (bay.variantOnly) {
     block.dataset.variant = 'true';
@@ -202,21 +219,28 @@ export function buildBayBlock(
 }
 
 export function buildGroupHeader(group: GroupView): HTMLDivElement {
-  const header = el('div', 'group-header');
+  // `.current` is the group holding the focused tab. It is a class and not a
+  // colour on the name, because a name says WHICH group and this says which one
+  // is being worked in — two facts, and one of them has to be the strength the
+  // other is written at.
+  const header = el('div', `group-header${group.active ? ' current' : ''}`);
+  // A TAB STOP, and it has to be one: the three orders are hidden with
+  // `visibility` so they are not stops of their own while unseen, which is what
+  // keeps the route from landing on a button nobody can see. Focus lands on the
+  // header, the band comes into view, and the next Tab has somewhere to go.
+  // It is also the keyboard's route to the fold — Enter on the header collapses
+  // it, the same thing a click anywhere on it does.
+  header.tabIndex = 0;
   header.dataset.groupid = String(group.id);
   header.dataset.color   = group.color;
   header.dataset.locked  = String(group.locked);
 
-  const twisty = el('button', 'group-toggle');
-  twisty.dataset.action = 'toggleGroup';
-  twisty.dataset.groupid = String(group.id);
-  // El nombre accesible y el hover se escriben de la MISMA cadena, que es lo que
-  // impide que se separen: los dos dicen que hace pulsarlo.
-  const twistyName = t('Collapse or Expand');
-  twisty.setAttribute('aria-label', twistyName);
-  setTip(twisty, twistyName);
-  twisty.appendChild(glyph(ICONS.group.expanded));
-  header.appendChild(twisty);
+  // What the group IS, ahead of its name: the two together are what names the
+  // group at a glance. It is not a control and takes no hover; what reports the
+  // fold is the chevron at the far end of the line.
+  const mark = glyph(ICONS.group.mark);
+  mark.classList.add('group-mark');
+  header.appendChild(mark);
 
   const label = el('span', 'group-label');
   label.textContent = group.label;
@@ -238,6 +262,24 @@ export function buildGroupHeader(group: GroupView): HTMLDivElement {
   actions.appendChild(lock);
 
   header.appendChild(actions);
+
+  // The fold CLOSES the line, full bleed against the card's right rim — the same
+  // place a repo card puts it. It is last of the run so it takes the rounded
+  // corner the header clips with, and it is the one control here drawn at all
+  // times: it reports a STATE, and a folded header whose fold only appeared
+  // under the pointer would be a header whose rows vanished with nothing saying
+  // why.
+  const fold = el('button', 'group-fold');
+  fold.dataset.action = 'toggleGroup';
+  fold.dataset.groupid = String(group.id);
+  // El nombre accesible y el hover se escriben de la MISMA cadena, que es lo que
+  // impide que se separen: los dos dicen que hace pulsarlo.
+  const foldName = t('Collapse or Expand');
+  fold.setAttribute('aria-label', foldName);
+  setTip(fold, foldName);
+  fold.appendChild(glyph(ICONS.group.foldExpanded));
+  header.appendChild(fold);
+
   return header;
 }
 
@@ -270,7 +312,7 @@ export function buildBlocks(
       blocks.push({ key: `group:${section.header.id}`, el: buildGroupHeader(section.header) });
     }
     for (const bay of section.bays) {
-      blocks.push({ key: `bay:${bay.id}`, el: buildBayBlock(bay, layout, section.header?.color) });
+      blocks.push({ key: `bay:${bay.id}`, el: buildBayBlock(bay, layout) });
     }
   }
 

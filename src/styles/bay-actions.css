@@ -1,14 +1,32 @@
-/* State Indicator & Action Buttons */
+/* The right edge of a row: the state mark it STATES, and the band of orders that
+   arrives over it.
 
-/* State indicator */
+   The pattern is one thing said twice. At rest a row's line runs to its own
+   right edge and the mark is the last thing on it; under the pointer the row
+   opens `padding-right` for the band, so the mark STEPS ASIDE instead of
+   vanishing. What it used to do was disappear — `display: none` on hover — which
+   is the one thing a fact about a row cannot do: a state you have to move the
+   mouse away from to read is one you have to remember rather than read. */
+
+/* The state mark: a bare glyph and not a box. What sizes it is the glyph, so a
+   clean row costs no width at all and the marks of a column line up against
+   each other rather than against a reserved square. */
 .bay-state {
-  flex           :0 0 auto;
-  display        :flex;
-  align-items    :center;
-  justify-content:center;
-  width          :22px;
-  height         :22px;
-  font-size      :14px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The air between it and the text it stands after. It belongs to the MARK and
+     not to a `gap` on the row, because the icon before the text carries its own
+     margin and a row gap would be counted on top of it. */
+  margin-left: 6px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.bay-state .codicon {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .bay-state.state-modified  {color: var(--vscode-gitDecoration-modifiedResourceForeground   ,#e2c08d); }
@@ -21,39 +39,81 @@
 .bay-state.state-error     {color: var(--vscode-editorError-foreground                     ,#f48771); }
 .bay-state.state-dirty     {color: var(--vscode-gitDecoration-modifiedResourceForeground   ,#e2c08d); }
 
-/* Hide state indicator on hover */
-.bay:hover .bay-state { display: none; }
+/* A clean row carries the slot in the markup and nothing in it, so it is taken
+   out of the flow entirely: `display: none` and not `visibility`, or an empty
+   span would still count toward the row's gap. */
+.bay-state.clean { display: none; }
 
-/* Clean state placeholder */
-.bay-state.clean { visibility: hidden; }
+/* === The band ==============================================================
 
-/* Action buttons */
+   OUT OF FLOW, which is what full bleed is made of here: pinned to the row's
+   own edges, so it reaches them whatever the padding is doing — and the padding
+   is moving, since that is what opens the room.
+
+   `visibility` and not `display`, because a hidden button must not be a stop on
+   the tab route and must still be reachable: the row's own `:focus-visible`
+   brings the band into view, and by then Tab has somewhere to land. `opacity`
+   rides the same clock as the padding, so the buttons arrive as the room does
+   instead of landing whole on top of a mark that has not moved yet. */
 .bay-actions {
-  flex: 0 0 auto;
-  display: none;
-  align-items: center;
-  gap: 3px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: stretch;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity    var(--bays-row-action-ms) ease,
+    visibility var(--bays-row-action-ms);
 }
 
-.bay:hover .bay-actions { display: flex; }
+/* `:focus-visible` on the ROW and never `:focus-within` — a click focuses the
+   row, which would leave the band drawn on the last row pressed. */
+.bay:hover .bay-actions,
+.bay:focus-visible .bay-actions,
+.bay-actions button:focus-visible {
+  visibility: visible;
+  opacity: 1;
+}
 
+/* One shape, one width: a square block the height of its row with no corners
+   rounded. A radius only means something on a shape with room around it, and
+   these have none — they close the row against its own edge. */
 .bay-actions button {
-  width: 20px;
-  height: 20px;
+  flex: none;
+  width: var(--bays-row-action);
+  align-self: stretch;
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--vscode-icon-foreground, var(--vscode-foreground));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  line-height: 1;
-  transition: background 150ms ease;
+  /* `font` in `codicon.css` is a shorthand and takes the size with it, so the
+     glyph is sized on the span below rather than here. */
+  font: inherit;
+  transition: background-color var(--bays-row-action-ms) ease;
 }
 
+.bay-actions button .codicon {
+  flex: none;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* These answer the pointer with a SURFACE and not with a tone, which is the one
+   place this view does: the band arrives over a name that reaches the row's
+   edge, so a colour change alone would be a glyph appearing on top of text. */
 .bay-actions button:hover {
   background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.31));
+}
+
+.bay-actions button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }

@@ -43,8 +43,28 @@ export const ICONS = {
 
   /** La cabecera de un grupo de editores. */
   group: {
-    expanded  : 'folder-opened-compact',
-    collapsed : 'folder-compact',
+    /**
+     * Qué ES un grupo: una COLECCIÓN de editores, no una carpeta del disco. El
+     * par de carpetas que llevaba decía además lo que la fila de debajo ya dice
+     * con su propio icono de fichero.
+     *
+     * No se mueve con el plegado, y por eso son DOS marcas y no una: lo que el
+     * grupo es no cambia porque sus filas se escondan. Quién reporta el plegado
+     * es el chevrón de al lado.
+     */
+    mark : 'collection',
+    /**
+     * The fold, and it says what PRESSING it does rather than which state the
+     * group is in: down on a folded header because pressing brings the rows
+     * back, up on an open one because pressing takes them away. Everything else
+     * a header offers says what pressing it does; a fold that reported the
+     * state instead would be the one control read the other way round.
+     *
+     * `collection` has no open/closed pair in codicon, which is why the mark
+     * cannot carry this fact and the fold is a second glyph.
+     */
+    foldExpanded  : 'chevron-up',
+    foldCollapsed : 'chevron-down',
     rename    : 'edit',
     color     : 'symbol-color',
     /** El candado REPORTA además de alternar: bloqueado se queda a la vista. */

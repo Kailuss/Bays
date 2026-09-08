@@ -8,6 +8,24 @@ const PATH_SEPARATOR = ' › ';
 const ELLIPSIS = '…';
 
 /**
+ * One band's width, in pixels, read from the token that draws it
+ * (`--bays-row-action`, base.css) so the number lives in one place.
+ *
+ * Cached for the life of the view: it is a constant of the stylesheet and not
+ * something a theme or a resize moves, and reading it is a style query in a
+ * pass that runs on every render and every resize.
+ */
+let cachedBandWidth = 0;
+
+function actionBandWidth(): number {
+  if (cachedBandWidth === 0) {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--bays-row-action');
+    cachedBandWidth = parseFloat(raw) || 24;
+  }
+  return cachedBandWidth;
+}
+
+/**
  * Trunca un path basándose en el ancho disponible del contenedor.
  * Muestra las carpetas que quepan desde la derecha, ocultando las de la izquierda.
  *
@@ -40,6 +58,21 @@ function truncatePathDynamic(element: HTMLElement): void {
   }
 
   let availableWidth = container.clientWidth;
+
+  // The room the band of orders will take, subtracted UP FRONT even though the
+  // row is not opened for it yet. That is what makes hovering a row move
+  // nothing at all: measured against the resting width, a path fitted exactly
+  // would be re-cut the moment the pointer arrived — and the flex ellipsis that
+  // did it would cut the TAIL, which is the folder the file actually lives in
+  // and the whole reason the path is there. This pass abbreviates from the left
+  // instead, where the generic folders are.
+  //
+  // Read off the row's own `--bay-actions` (written by `rows.ts`) rather than
+  // measured: the band is out of flow and hidden, so asking the DOM for its
+  // width would force a layout per row in a pass that already forces plenty.
+  const row = container.closest<HTMLElement>('.bay');
+  const slots = Number(row?.style.getPropertyValue('--bay-actions') ?? 0);
+  if (slots > 0) { availableWidth -= slots * actionBandWidth(); }
 
   // En modo compact, el path comparte línea con .bay-name
   // Necesitamos restar el ancho del name y el gap

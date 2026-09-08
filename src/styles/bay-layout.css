@@ -7,13 +7,36 @@
   display: flex;
   align-items: center;
   height: 39px;
+  /* Nothing is held open at REST: the line runs to the row's right edge until
+     the orders are asked for. */
   padding: 0 8px 0 8px;
   background: var(--vscode-bay-inactiveBackground, transparent);
   color: var(--vscode-bay-inactiveForeground, var(--vscode-foreground));
   border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
   cursor: pointer;
+  /* The band is positioned against this row, and clipped by it. */
   position: relative;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+  /* That right padding is what OPENS for it: transitioning it is what makes the
+     state mark step aside instead of jumping. */
+  transition:
+    transform     200ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity       200ms ease,
+    padding-right var(--bays-row-action-ms) ease;
+}
+
+/* How much room to open, and it has to be COUNTED here: unlike Atria's pinned
+   rows, which carry one button and one width, a bay carries between zero and
+   three (a quick action, Add to Chat, Close). `rows.ts` writes the count on the
+   row as `--bay-actions`, so the padding is exact and a row with no orders at
+   all never opens.
+
+   Asked of the BAND's presence and not of the row alone: an orderless row
+   hovered would otherwise slide its name across to make room for buttons that
+   are not coming. */
+.bay:has(.bay-actions):hover,
+.bay:has(.bay-actions):focus-visible,
+.bay:has(.bay-actions button:focus-visible) {
+  padding-right: calc(8px + var(--bay-actions, 0) * var(--bays-row-action));
 }
 
 /* Compact mode */

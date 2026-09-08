@@ -15,6 +15,43 @@
   --bays-pulse-ms: 1000ms;
   /* El fundido con el que entra un tooltip. */
   --bays-tip-fade-ms: 120ms;
+
+  /* === The shapes the view is drawn with =================================
+
+     One width for every band that closes a row against its right edge: the
+     actions on a bay, the buttons on a group header and the fold that ends it.
+     One number, so a row's right edge is one run of squares and nothing has to
+     count slots of different sizes. */
+  --bays-row-action: 24px;
+  /* The clock that band opens on. What moves is the row's own `padding-right`,
+     so the state mark steps aside instead of vanishing under the pointer. */
+  --bays-row-action-ms: 120ms;
+
+  /* A card: loose of the panel's edges, ringed, lying ON the view rather than
+     cut into it. Today the group header is the one thing drawn this way. */
+  /* The strip a group is headed by. Atria's path bar to the pixel: the height it
+     stands at, and the accent that closes it on the edge that faces its rows. */
+  --bays-header-height: 28px;
+  --bays-card-gap: 6px;
+  --bays-card-radius: 6px;
+  /* A SHADOW ring and not a border, which is the only way a fraction of a pixel
+     survives: a border is laid out, and a laid-out width snaps to whole device
+     pixels, so anything between 1 and 2 lands back on a hairline. A shadow is
+     painted, so it is antialiased and keeps what the token says. It also goes
+     outside the border box, which is what keeps the card's inner curve equal to
+     its own radius. */
+  --bays-card-ring: 1.25px;
+  /* The WIDGET border first and `transparent` last, which is the chain a theme
+     actually answers for a floating box. It used to lead with
+     `sideBarSectionHeader-border` over a hard grey: that token is a solid rule
+     drawn between sections, so behind a 1.25px ring it came out as a heavy
+     outline, and the grey meant a theme that had said nothing still got one. */
+  --bays-card-border: var(--vscode-widget-border, var(--vscode-sideBarSectionHeader-border, var(--vscode-panel-border, transparent)));
+  --bays-card-lift: var(--vscode-widget-shadow, transparent);
+  /* The surface a card wears: the EDITOR's, the opposite of the list's own. In
+     dark themes it sinks the header, in light ones it lifts it, and either way
+     it sets it apart from the rows below without inventing a colour. */
+  --bays-section-surface: var(--vscode-editor-background, var(--vscode-sideBar-background));
 }
 
 /* Vista quieta. Lo que se apaga es lo que la vista AÑADE encima de un estado; no
@@ -24,6 +61,7 @@ body.no-motion {
   --bays-close-ms: 0ms;
   --bays-pulse-ms: 0ms;
   --bays-tip-fade-ms: 0ms;
+  --bays-row-action-ms: 0ms;
 }
 
 /* Reset */

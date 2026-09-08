@@ -168,50 +168,22 @@
   color: var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
 }
 
-/* Hide stats on hover to show actions */
-.bay.variant:hover .variant-stats {
-  display: none;
-}
+/* ACTION BUTTONS
 
-/* ACTION BUTTONS */
-.bay.variant .bay-actions {
-  display: none;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-}
+   A variant carries the same band as any other row (bay-actions.css): out of
+   flow against the row's own edge, arriving as the row opens the room for it.
+   Nothing is restated here — one shape in every place a row is closed — and
+   what the stats used to do, which was disappear on hover, is what that band
+   makes unnecessary: they step aside instead.
 
-.bay.variant:hover .bay-actions {
-  display: flex;
-}
-
-.bay.variant .bay-actions button {
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 3px;
-  color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  opacity: 0.7;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 150ms ease;
-}
-
-.bay.variant .bay-actions button:hover {
-  opacity: 1;
-  background: var(--vscode-toolbar-hoverBackground, rgba(90,93,94,0.2));
-}
-
-.bay.variant .bay-actions button:active {
-  transform: scale(0.95);
+   The one thing a variant does add is the reach of a stat's own margin, which
+   was written for a row that took its buttons back at the same instant. */
+.bay.variant .variant-stats {
+  margin-right: 0;
 }
 
 .bay.variant .bay-actions button img {
-  width: 11px;
-  height: 11px;
+  width: 13px;
+  height: 13px;
   object-fit: contain;
 }
