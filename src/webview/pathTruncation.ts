@@ -1,11 +1,56 @@
-// ==========================================
-// DYNAMIC PATH TRUNCATION
-// ==========================================
-// Trunca paths ocultando carpetas completas desde el inicio,
-// adaptándose al ancho disponible del contenedor.
+// Fitting a path into the width its row has.
+//
+// It cuts from the LEFT, hiding whole folders behind an ellipsis: what tells two
+// files with the same name apart is the folder they live in, which sits at the
+// end, so the tail-first cut a `text-overflow` would make takes away exactly
+// what the path is there to say.
+//
+// What governs this file is COST. Measuring text means writing to the DOM and
+// reading a width back, which forces a layout per read, and this runs over every
+// row in the list. Hence three rules:
+//
+//  - **One SINGLE measurer**, created once and reused.
+//  - **Widths are CACHED** by (typeface, text). A row's candidates depend only
+//    on its segments, so they never change: after the first time, a repaint and
+//    a resize measure nothing at all.
+//  - **Read EVERYTHING first, write EVERYTHING after.** Interleaved, each write
+//    dirties the layout the next read forces again — that is the thrash, and it
+//    is a document layout per row and per candidate.
+//
+// And there is no `MutationObserver`. One over `<body>` with `subtree` is fired
+// by any node added anywhere in the document — showing a tooltip, opening the
+// context menu, patching an icon, swapping a state mark — and every one of those
+// would re-fit every path in the list. What knows which rows are new is the
+// reconciliation (`render.ts`), which has just built them, so it is what says so.
 
-const PATH_SEPARATOR = ' › ';
-const ELLIPSIS = '…';
+import { fitPathParts } from '../utils/pathFit';
+
+/** Cushion against sub-pixel rounding, which otherwise makes the level oscillate. */
+const SAFETY_BUFFER = 3;
+
+/**
+ * Cap on the width cache.
+ *
+ * Its key carries the text, so it grows with the paths visited and not with
+ * anything bounded. It is dropped WHOLE when the cap is hit, like the language
+ * registry: half a cache is one more question to ask on the hot path, and what
+ * is lost gets measured again next time it is needed.
+ */
+const MAX_MEASURE_CACHE = 2000;
+
+/**
+ * Each painted path's segments, handed over by `rows.ts` as it builds the row.
+ *
+ * In a `WeakMap` rather than an attribute: the client already HAS the segments
+ * in the model, and writing them out as JSON to parse them back here is a round
+ * trip through a string to recover an array that was in hand.
+ */
+const partsOf = new WeakMap<HTMLElement, string[]>();
+
+/** The segments this path is cut down from. Without them it is left alone. */
+export function setPathParts(el: HTMLElement, parts: string[]): void {
+  partsOf.set(el, parts);
+}
 
 /**
  * One band's width, in pixels, read from the token that draws it
@@ -25,39 +70,122 @@ function actionBandWidth(): number {
   return cachedBandWidth;
 }
 
+//= THE MEASURER
+
+/** The one element used for measuring, hung off the `<body>` a single time. */
+let measurer: HTMLSpanElement | null = null;
+
+function theMeasurer(): HTMLSpanElement {
+  if (!measurer) {
+    measurer = document.createElement('span');
+    // Out of flow and out of sight: writing to it moves nothing in the list, so
+    // the layout its read forces invalidates no other measurement.
+    measurer.style.cssText =
+      'position:fixed;top:0;left:0;visibility:hidden;white-space:nowrap;pointer-events:none';
+    measurer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(measurer);
+  }
+  return measurer;
+}
+
+/** Width by (typeface, text). The key carries the font because the font moves it. */
+const widths = new Map<string, number>();
+
 /**
- * Trunca un path basándose en el ancho disponible del contenedor.
- * Muestra las carpetas que quepan desde la derecha, ocultando las de la izquierda.
+ * What joins the parts of a cache key.
  *
- * @param element - Elemento que contiene el path a truncar
+ * A control character, because every other part is free text: a font family or
+ * a folder name can hold anything a filesystem allows, and a printable
+ * separator is one two different keys could collide on. Written as an ESCAPE and
+ * never as the character itself, which is invisible in the source.
  */
-function truncatePathDynamic(element: HTMLElement): void {
-  const pathPartsAttr = element.getAttribute('data-path-parts');
-  if (!pathPartsAttr) {
-    return;
-  }
+const SEP = '\u0001';
 
-  let parts: string[];
-  try {
-    parts = JSON.parse(pathPartsAttr);
-  } catch {
-    console.error('[PathTruncate] Invalid JSON in data-path-parts:', pathPartsAttr);
-    return;
-  }
+/**
+ * Everything that decides how wide a text comes out, read off a real row.
+ *
+ * The `key` is what the cache is indexed by, and it is derived from the very
+ * same fields that get applied — were they two lists, a width measured under one
+ * typeface could be read back under another. A theme change or a zoom moves the
+ * computed `font-size`, so the key changes by itself and whatever was cached
+ * under the previous one simply stops being read.
+ */
+type Font = {
+  key          : string;
+  style        : string;
+  variant      : string;
+  weight       : string;
+  size         : string;
+  family       : string;
+  letterSpacing: string;
+};
 
-  if (!parts || parts.length === 0) {
-    return;
-  }
+function fontOf(el: HTMLElement): Font {
+  const s = getComputedStyle(el);
+  const font: Omit<Font, 'key'> = {
+    style        : s.fontStyle,
+    variant      : s.fontVariant,
+    weight       : s.fontWeight,
+    size         : s.fontSize,
+    family       : s.fontFamily,
+    letterSpacing: s.letterSpacing,
+  };
+  return { ...font, key: Object.values(font).join(SEP) };
+}
 
-  // CRÍTICO: Medir el ancho del contenedor PADRE (.bay-text), no del elemento mismo
-  // Si medimos element.clientWidth, este cambia cuando modificamos textContent,
-  // causando mediciones inconsistentes y comportamiento oscilante
-  const container = element.parentElement;
-  if (!container) {
-    return;
-  }
+function measure(font: Font, text: string): number {
+  const key = `${font.key}${SEP}${text}`;
+  const hit = widths.get(key);
+  if (hit !== undefined) { return hit; }
 
-  let availableWidth = container.clientWidth;
+  if (widths.size >= MAX_MEASURE_CACHE) { widths.clear(); }
+
+  const span = theMeasurer();
+  // Applied as LONGHANDS and not through the `font` shorthand: a computed
+  // `font-variant` can serialise to something the shorthand does not accept
+  // (it only takes `normal` or `small-caps`), and a shorthand that fails to
+  // parse is DROPPED WHOLE — the measurer would keep the previous row's
+  // typeface and hand back a width for a font nothing is drawn in.
+  span.style.fontStyle     = font.style;
+  span.style.fontVariant   = font.variant;
+  span.style.fontWeight    = font.weight;
+  span.style.fontSize      = font.size;
+  span.style.fontFamily    = font.family;
+  span.style.letterSpacing = font.letterSpacing;
+  span.textContent = text;
+  // The ONLY read in here that forces a layout, and only on a miss.
+  const width = span.offsetWidth;
+
+  widths.set(key, width);
+  return width;
+}
+
+//= THE PASS
+
+/** What has been read off a row, before anything is written to any of them. */
+type Fit = {
+  el       : HTMLElement;
+  parts    : string[];
+  font     : Font;
+  available: number;
+};
+
+/**
+ * The READ phase: what it takes to decide, without touching the DOM.
+ *
+ * None of these reads depends on the path's own text — `.bay-text` takes its
+ * width from the row and `.bay-name` is `flex-shrink: 0` in compact mode — so
+ * doing them all up front changes no answer, and removes the layout each write
+ * was forcing on the next read.
+ */
+function readFit(el: HTMLElement, fonts: Map<string, Font>): Fit | null {
+  const parts = partsOf.get(el);
+  if (!parts || parts.length === 0) { return null; }
+
+  const container = el.parentElement;
+  if (!container) { return null; }
+
+  let available = container.clientWidth;
 
   // The room the band of orders will take, subtracted UP FRONT even though the
   // row is not opened for it yet. That is what makes hovering a row move
@@ -69,153 +197,84 @@ function truncatePathDynamic(element: HTMLElement): void {
   //
   // Read off the row's own `--bay-actions` (written by `rows.ts`) rather than
   // measured: the band is out of flow and hidden, so asking the DOM for its
-  // width would force a layout per row in a pass that already forces plenty.
+  // width would force a layout per row.
   const row = container.closest<HTMLElement>('.bay');
   const slots = Number(row?.style.getPropertyValue('--bay-actions') ?? 0);
-  if (slots > 0) { availableWidth -= slots * actionBandWidth(); }
+  if (slots > 0) { available -= slots * actionBandWidth(); }
 
-  // En modo compact, el path comparte línea con .bay-name
-  // Necesitamos restar el ancho del name y el gap
-  const isInline = element.classList.contains('bay-path-inline');
-  if (isInline) {
+  // In compact mode the path shares its line with `.bay-name`, so the name and
+  // the gap between the two (4px gap + 6px left margin) come off the top.
+  if (el.classList.contains('bay-path-inline')) {
     const bayName = container.querySelector<HTMLElement>('.bay-name');
-    if (bayName) {
-      availableWidth -= bayName.offsetWidth;
-      // Restar gap (4px según CSS) + margen izquierdo del path-inline (6px)
-      availableWidth -= 10;
-    }
+    if (bayName) { available -= bayName.offsetWidth + 10; }
   }
 
-  // Buffer de seguridad para evitar comportamiento oscilante por redondeos de píxeles
-  const SAFETY_BUFFER = 3;
-  const containerWidth = availableWidth - SAFETY_BUFFER;
-
-  if (containerWidth <= 0) {
-    return; // No visible aún o ancho insuficiente
+  // The typeface is asked once per CLASS and not per row: there are two
+  // (`.bay-path` and `.bay-path-inline`), each drawn with its own, and
+  // `getComputedStyle` per element is a style query per row.
+  let font = fonts.get(el.className);
+  if (font === undefined) {
+    font = fontOf(el);
+    fonts.set(el.className, font);
   }
 
-  // Crear un elemento temporal para medir texto
-  // CRÍTICO: Copiar TODOS los estilos que afectan el ancho del texto
-  const computedStyle = getComputedStyle(element);
-  const measurer = document.createElement('span');
-  measurer.style.cssText = `
-    position: absolute;
-    visibility: hidden;
-    white-space: nowrap;
-    font-size: ${computedStyle.fontSize};
-    font-family: ${computedStyle.fontFamily};
-    font-weight: ${computedStyle.fontWeight};
-    letter-spacing: ${computedStyle.letterSpacing};
-    font-variant: ${computedStyle.fontVariant};
-    font-style: ${computedStyle.fontStyle};
-  `;
-  document.body.appendChild(measurer);
+  return { el, parts, font, available: available - SAFETY_BUFFER };
+}
 
-  // --- Algoritmo monótono de truncado ---
-  // Garantiza que al reducir el ancho, el path solo puede mantener o
-  // aumentar el nivel de truncado, nunca revertirlo.
-  //
-  // Estrategia: probar candidatos de mayor a menor número de partes visibles.
-  // Cada candidato se mide CON la elipsis incluida (excepto el path completo),
-  // eliminando la discrepancia entre "cabe sin elipsis" vs "no cabe con elipsis".
+/** Fits the paths it is handed, in three phases with nothing interleaved. */
+function truncate(paths: Iterable<HTMLElement>): void {
+  const fonts = new Map<string, Font>();
 
-  let result = ELLIPSIS; // Caso extremo: solo elipsis
-
-  // 1. Intentar el path completo (sin elipsis)
-  const fullPath = parts.join(PATH_SEPARATOR);
-  measurer.textContent = fullPath;
-
-  if (measurer.offsetWidth <= containerWidth) {
-    result = fullPath;
-  } else {
-    // 2. Probar N partes desde la derecha, siempre con prefijo "…\"
-    //    Desde parts.length-1 (casi todo) hasta 1 (solo la última carpeta)
-    for (let n = parts.length - 1; n >= 1; n--) {
-      const visible = parts.slice(parts.length - n).join(PATH_SEPARATOR);
-      const candidate = ELLIPSIS + PATH_SEPARATOR + visible;
-      measurer.textContent = candidate;
-
-      if (measurer.offsetWidth <= containerWidth) {
-        result = candidate;
-        break;
-      }
-    }
+  // 1. READ. Nothing here writes, so no layout is dirtied along the way.
+  const fits: Fit[] = [];
+  for (const el of paths) {
+    const fit = readFit(el, fonts);
+    // No width yet (the row is not laid out) means there is nothing to decide.
+    if (fit && fit.available > 0) { fits.push(fit); }
   }
+  if (fits.length === 0) { return; }
 
-  document.body.removeChild(measurer);
-  // Only write when the value actually changed. Reassigning textContent replaces
-  // the child text node (a childList mutation the observer would see), so a
-  // no-op write both wastes a reflow and feeds the feedback loop.
-  if (element.textContent !== result) {
-    element.textContent = result;
+  // 2. MEASURE. Only cache misses reach the measurer.
+  const results = fits.map(fit =>
+    fitPathParts(fit.parts, fit.available, text => measure(fit.font, text)));
+
+  // 3. WRITE, and only what actually changes: reassigning `textContent` replaces
+  //    the text node, so a no-op write costs a reflow for nothing.
+  for (let i = 0; i < fits.length; i++) {
+    if (fits[i].el.textContent !== results[i]) { fits[i].el.textContent = results[i]; }
   }
 }
 
-// Module-scoped so truncateAllPaths can pause it while mutating the DOM.
-let pathObserver: MutationObserver | null = null;
+const PATH_SELECTOR = '.bay-path, .bay-path-inline';
 
-/**
- * Aplica truncado dinámico a todos los paths en la página.
- */
-function truncateAllPaths(): void {
-  // truncateAllPaths mutates the observed subtree (appends a measurer to body,
-  // rewrites path textContent). Disconnect while doing so, otherwise each pass
-  // re-triggers the observer, which reschedules another pass, forever — a
-  // perpetual ~16ms CPU/reflow spin. Reconnect once we're done.
-  if (pathObserver) { pathObserver.disconnect(); }
-  document.querySelectorAll<HTMLElement>('.bay-path, .bay-path-inline').forEach(truncatePathDynamic);
-  if (pathObserver && document.body) {
-    pathObserver.observe(document.body, { childList: true, subtree: true });
+/** The paths inside the blocks the reconciliation has just built. */
+export function truncatePathsIn(roots: readonly HTMLElement[]): void {
+  if (roots.length === 0) { return; }
+  const paths: HTMLElement[] = [];
+  for (const root of roots) {
+    root.querySelectorAll<HTMLElement>(PATH_SELECTOR).forEach(el => paths.push(el));
   }
+  truncate(paths);
+}
+
+/** Every path in the list. Asked for by a width change, which moves them all. */
+export function truncateAllPaths(): void {
+  truncate(document.querySelectorAll<HTMLElement>(PATH_SELECTOR));
 }
 
 /**
- * Inicializa el sistema de truncado de paths.
- * - Ejecuta truncado inicial al cargar el DOM
- * - Observa cambios en el DOM para truncar paths nuevos
- * - Re-trunca al redimensionar la ventana
+ * The only thing left to watch is the WIDTH, which is what changes on its own.
+ *
+ * New rows are announced by the render, which is what builds them, so there is
+ * nothing here to observe.
  */
 export function initPathTruncation(): void {
-  // Ejecutar al cargar el contenido
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', truncateAllPaths);
-  } else {
-    truncateAllPaths();
-  }
-
-  // Re-truncar al redimensionar la ventana
-  // Usar requestAnimationFrame para asegurar que el layout esté estable antes de medir
   let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+      // A frame of grace so the layout is settled before anything measures it.
       requestAnimationFrame(truncateAllPaths);
     }, 100);
   });
-
-  // Observar cambios en el DOM para truncar paths nuevos
-  pathObserver = new MutationObserver((mutations) => {
-    let shouldTruncate = false;
-    for (const mutation of mutations) {
-      if (mutation.addedNodes.length > 0) {
-        shouldTruncate = true;
-        break;
-      }
-    }
-    if (shouldTruncate) {
-      // requestAnimationFrame asegura que el layout esté completo antes de medir
-      requestAnimationFrame(() => {
-        setTimeout(truncateAllPaths, 10);
-      });
-    }
-  });
-
-  // Observar el body
-  if (document.body) {
-    pathObserver.observe(document.body, { childList: true, subtree: true });
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      pathObserver?.observe(document.body, { childList: true, subtree: true });
-    });
-  }
 }

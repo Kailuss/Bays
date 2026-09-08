@@ -16,6 +16,7 @@ import type { BayView, GroupSection, GroupView, VariantView } from '../shared/pr
 import { BAY_STATES } from '../shared/bayState';
 import { ICONS } from '../shared/icons';
 import { setTip, setOverflowTip } from './tooltip';
+import { setPathParts } from './pathTruncation';
 import { t } from './l10n';
 
 /** Los iconos del render actual: clave → HTML. */
@@ -111,11 +112,13 @@ function buildBayRow(bay: BayView, layout: RowLayout): HTMLDivElement {
   }
   text.appendChild(name);
 
-  // La ruta va en su propio nodo, con los segmentos en un atributo: el truncado
-  // dinámico (`pathTruncation.ts`) los necesita para recortar por la izquierda.
+  // The path goes in a node of its own, and its segments are HANDED to the
+  // fitting pass (`pathTruncation.ts`), which needs them to cut from the left.
+  // Handed, not written out as JSON on an attribute for it to parse back: that
+  // is a round trip through a string to recover an array already in hand.
   if (bay.detail) {
     const path = el('div', layout.compact ? 'bay-path-inline' : 'bay-path');
-    path.dataset.pathParts = JSON.stringify(bay.pathParts ?? []);
+    setPathParts(path, bay.pathParts ?? []);
     path.textContent = bay.detail;
     text.appendChild(path);
   }

@@ -8,6 +8,7 @@ import { applyRender } from './render';
 import { initDragDrop, dragInFlight, onDragEnd } from './dragdrop';
 import { nameClassFor, stateSlot } from './rows';
 import { setTipDelay, hideOrphanedTip } from './tooltip';
+import { truncatePathsIn } from './pathTruncation';
 import { ICONS } from '../shared/icons';
 
 // Emisor tipado: cada mensaje saliente debe ser un WebviewToHostMessage
@@ -21,6 +22,10 @@ function post(message: WebviewToHostMessage): void {
 // Collapse a group header and hide its rows (or expand). Shared by the click
 // handler and the post-rebuild restore so both stay in sync.
 function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
+  // Read BEFORE the toggle: an actual unfold is what has to re-fit the paths
+  // below, and this runs over every header on every render that touched
+  // anything — asked after, the answer would be "expanded" for all of them.
+  const wasCollapsed = header.classList.contains('collapsed');
   header.classList.toggle('collapsed', collapsed);
 
   // Only the FOLD moves: the group's mark says what it is and does not change
@@ -33,11 +38,19 @@ function setGroupCollapsed(header: HTMLElement, collapsed: boolean): void {
     icon.classList.add(`codicon-${collapsed ? ICONS.group.foldCollapsed : ICONS.group.foldExpanded}`);
   }
 
+  const rows: HTMLElement[] = [];
   let sibling = header.nextElementSibling;
   while (sibling && !sibling.classList.contains('group-header')) {
     (sibling as HTMLElement).style.display = collapsed ? 'none' : '';
+    rows.push(sibling as HTMLElement);
     sibling = sibling.nextElementSibling;
   }
+
+  // A hidden row has no width, so its path could not be fitted while the group
+  // was folded — and the render that built it has already been and gone.
+  // Unfolding is the moment those rows get a width, so it is the moment they
+  // get measured. Folding needs nothing: what is not drawn is not read.
+  if (wasCollapsed && !collapsed) { truncatePathsIn(rows); }
 }
 
 // Flip a header's collapsed state and persist it so the next full rebuild can
@@ -93,7 +106,7 @@ function paint(msg: RenderMessage): void {
   // un solo sitio en vez de que cada una consulte su propio ajuste.
   document.body.classList.toggle('no-motion', !msg.motion);
 
-  const touched = applyRender(msg.sections, msg.icons, {
+  const { touched, built } = applyRender(msg.sections, msg.icons, {
     compact : msg.compact,
     showPath: msg.showPath,
   });
@@ -104,6 +117,10 @@ function paint(msg: RenderMessage): void {
     // colgado.
     hideOrphanedTip();
   }
+  // Only what is NEW: a block the reconciliation left alone is still cut to the
+  // width it still has. The render saying so is what a `MutationObserver` over
+  // the document cannot, which is why there isn't one.
+  truncatePathsIn(built);
 }
 
 // Al soltar, se sirve lo que se aplazó.
@@ -319,6 +336,10 @@ export function initInteractions(): void {
           } else {
             nameEl.insertBefore(document.createTextNode(msg.label), nameEl.firstChild);
           }
+          // In compact mode the path shares its line with the name, so what the
+          // name takes decides what is left for it: a title rewritten at runtime
+          // (Claude Code) otherwise leaves the path cut to the previous width.
+          truncatePathsIn([bay as HTMLElement]);
         }
       }
     }
@@ -350,6 +371,11 @@ export function initInteractions(): void {
           setTimeout(() => name.classList.remove('changing'), 1000);
         }
         slot?.replaceWith(stateSlot(msg.state));
+        // The mark is `flex: 0 0 auto` and a clean row's is EMPTY, so gaining or
+        // losing one moves what is left for the text beside it. Unfitted, the
+        // path would then be cut by the stylesheet — from the TAIL, which is the
+        // folder the file lives in and the whole reason it is there.
+        truncatePathsIn([bay as HTMLElement]);
       }
     }
   });

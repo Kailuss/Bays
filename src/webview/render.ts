@@ -71,19 +71,28 @@ function buildables(sections: GroupSection[], layout: RowLayout): Buildable[] {
 }
 
 /**
- * Aplica la lista.
+ * What a render leaves behind.
  *
- * @returns si el DOM se ha tocado de verdad. Lo mira quien tiene que volver a
- *   aplicar lo que vive SOLO en el DOM (el plegado de un grupo), para no pagar
- *   esa pasada cuando no ha cambiado nada.
+ * `touched` is read by whoever has to re-apply what lives ONLY in the DOM (a
+ * group's fold), so that pass is not paid for when nothing has changed.
+ *
+ * `built` is the blocks that were actually CONSTRUCTED. Path fitting asks for
+ * it, because it only has to measure what is new: a block left alone is already
+ * cut to the width it still has. It is said here because here is where it is
+ * known — asked of the document instead, the answer is "something changed,
+ * somewhere", and with that there is no choice but to re-measure everything.
  */
+export type RenderResult = { touched: boolean; built: HTMLElement[] };
+
+/** Applies the list. */
 export function applyRender(
   sections: GroupSection[],
   icons: Record<string, string>,
   layout: RowLayout,
-): boolean {
+): RenderResult {
+  const built: HTMLElement[] = [];
   const root = container();
-  if (!root) { return false; }
+  if (!root) { return { touched: false, built }; }
 
   // El diccionario se pone ANTES de construir nada: es de donde cada fila saca
   // el markup de su icono.
@@ -130,6 +139,7 @@ export function applyRender(
 
       paintedEl.set(action.key, el);
       paintedSignature.set(action.key, item.signature);
+      built.push(el);
       touched = true;
     }
 
@@ -152,5 +162,5 @@ export function applyRender(
     touched = true;
   }
 
-  return touched;
+  return { touched, built };
 }
