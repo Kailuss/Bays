@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.13] - 2026-09-09
+
+### Changed
+
+- The extension icon's rows are a neutral grey instead of a blue slate.
+
 ## [0.4.12] - 2026-09-09
 
 ### Changed
