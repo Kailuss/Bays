@@ -141,8 +141,16 @@ function beginDrag(): void {
   const rect = sourceEl.getBoundingClientRect();
 
   // blockHeight = alto real del bloque completo (parent + todos sus children)
-  // getBoundingClientRect() ya lo calcula porque .bay-block los contiene
-  blockHeight = Math.round(rect.height) + 1;
+  // getBoundingClientRect() ya lo calcula porque .bay-block los contiene.
+  //
+  // And NOTHING is added to it. Blocks sit flush — `#bays` lays them out with no
+  // gap and a block carries no margin of its own — so the distance between two
+  // adjacent block tops IS this height, and that is the distance every displaced
+  // sibling is shifted by. The `+ 1` that used to be here was paying for a
+  // border that a rect already includes, so each shifted row landed a pixel past
+  // its slot: a list that settles a hair off true while the drag is still in the
+  // air, which is exactly the kind of thing nothing reports.
+  blockHeight = Math.round(rect.height);
 
   // Regiones verticales de cada grupo (para detectar arrastre entre grupos).
   // Sin cabeceras (un solo grupo visible) queda vacío ⇒ sólo reordenación local.
@@ -162,7 +170,10 @@ function beginDrag(): void {
   // Guardar posición y alto originales de cada sibling
   originalOrder = siblings.map(b => {
     const r = b.getBoundingClientRect();
-    return { el: b, origTop: r.top, height: Math.round(r.height) + 1 };
+    // Same reckoning as blockHeight, and no `+ 1` for the same reason. This one
+    // only decides a MIDPOINT, so a stray pixel here moves the threshold and
+    // never a row — but two spellings of one height are two places to fix it.
+    return { el: b, origTop: r.top, height: Math.round(r.height) };
   });
 
   // Clonar el bloque entero (parent + children) en una sola operación
