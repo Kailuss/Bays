@@ -7,6 +7,23 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.10] - 2026-09-08
+
+### Changed
+
+- The rule between two rows fades out at both ends.
+- The rule between a row and its variants is broken, and between two variants
+  there is none.
+- The block being dragged carries no rule under it.
+- A selected row's name is drawn a step heavier, and the row a selected variant
+  hangs from keeps that weight.
+- A variant drags its whole block, like every other row of it.
+- The View Options menu is marked with a vertical ellipsis.
+
+### Fixed
+
+- Reordering by drag lands each row on its slot instead of a pixel past it.
+
 ## [0.4.9] - 2026-09-08
 
 ### Changed
