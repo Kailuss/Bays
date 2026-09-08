@@ -40,6 +40,7 @@
   "config.syncCursorPosition": "Sincronitza la posició del cursor (línia i columna) entre una dàrsena i les seves variants (diferències, instantànies…). Activat, moure el cursor en una les mou totes.",
   "config.animations": "L'interruptor mestre de tot el que la vista mou: l'animació de tancament, el pols en canviar d'estat i el fos dels tooltips. També l'apaga `workbench.reduceMotion`.",
   "config.followProductIconTheme": "Dibuixa els glifs del tauler amb el paquet d'icones de producte triat a `workbench.productIconTheme`, com la resta de l'entorn. Apagat, el tauler es queda amb els codicons que porta l'extensió i no es llegeix res del disc.",
+  "config.trace": "Escriu al canal de sortida Bays una traça detallada del que l'extensió està fent. Apagat per defecte: aquestes línies són per depurar, i escriure-les costa una marca de temps i un viatge al canal en camins que corren un cop per pestanya. Els avisos i els errors s'escriuen igualment.",
   "capabilities.untrustedWorkspaces": "Bays només llegeix la llista d'editors oberts i el seu estat de git i de diagnòstics. Mai no executa codi de l'espai de treball.",
   "capabilities.virtualWorkspaces": "Bays funciona en un espai de treball virtual. Les accions que necessiten un fitxer al disc, i l'estat del git, no hi són disponibles."
 }

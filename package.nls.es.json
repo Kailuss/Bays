@@ -40,6 +40,7 @@
   "config.syncCursorPosition": "Sincroniza la posición del cursor (línea y columna) entre una bahía y sus variantes (diferencias, instantáneas…). Encendido, mover el cursor en una las mueve en todas.",
   "config.animations": "El interruptor maestro de todo lo que la vista mueve: la animación de cierre, el pulso al cambiar de estado y el fundido de los tooltips. Lo apaga también `workbench.reduceMotion`.",
   "config.followProductIconTheme": "Dibuja los glifos del panel con el pack de iconos de producto elegido en `workbench.productIconTheme`, como el resto del entorno. Apagado, el panel se queda con los codicons que trae la extensión y no se lee nada del disco.",
+  "config.trace": "Escribe en el canal de salida Bays una traza detallada de lo que la extensión está haciendo. Apagado por defecto: esas líneas son para depurar, y escribirlas cuesta una marca de tiempo y un viaje al canal en caminos que corren una vez por pestaña. Los avisos y los errores se escriben de todas formas.",
   "capabilities.untrustedWorkspaces": "Bays solo lee la lista de editores abiertos y su estado de git y de diagnósticos. Nunca ejecuta código del área de trabajo.",
   "capabilities.virtualWorkspaces": "Bays funciona en un área de trabajo virtual. Las acciones que necesitan un archivo en disco, y el estado de git, no están disponibles ahí."
 }

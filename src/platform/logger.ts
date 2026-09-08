@@ -1,41 +1,79 @@
 import * as vscode from 'vscode';
 
 /**
- * Logger central que escribe en el canal de salida "Bays".
- * Usar para mensajes importantes y errores (no para traza detallada).
+ * The central logger, writing to the "Bays" output channel.
+ *
+ * `log` is GATED behind `bays.trace`, off by default, and that gate is not
+ * hygiene. There are over a hundred call sites and several of them sit inside
+ * per-tab loops on the sync path, so every one of them costs a `Date`, an ISO
+ * format and a round trip to the channel — for a line nobody is reading unless
+ * something is being debugged. The flag is cached and only re-read when the
+ * setting moves, so the hot path costs one boolean.
+ *
+ * `warn` and `error` are NOT gated: a warning is something that went wrong, and
+ * one that only shows up for whoever already suspected it is a warning nobody
+ * ever reads. They are also rare by construction.
  */
 export class Logger {
   private static outputChannel: vscode.OutputChannel;
+  private static traceEnabled = false;
+  private static configListener: vscode.Disposable | undefined;
 
-  /** Crea el canal de salida. Llamar una vez desde `activate()`. */
+  /** Creates the output channel. Call once from `activate()`. */
   static initialize(): void {
     this.outputChannel = vscode.window.createOutputChannel('Bays');
+    this.readTrace();
+    this.configListener?.dispose();
+    this.configListener = vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('bays.trace')) { this.readTrace(); }
+    });
   }
 
-  /** Registra un mensaje informativo con marca temporal. */
+  private static readTrace(): void {
+    this.traceEnabled = vscode.workspace.getConfiguration('bays').get<boolean>('trace', false);
+  }
+
+  /** Whether a trace line would be written. Read it before building an expensive one. */
+  static get tracing(): boolean {
+    return this.traceEnabled;
+  }
+
+  /** A trace line. Silent unless `bays.trace` is on. */
   static log(message: string): void {
-    const timestamp = new Date().toISOString();
-    this.outputChannel.appendLine(`[${timestamp}] ${message}`);
+    if (!this.traceEnabled) { return; }
+    this.write(message);
   }
 
-  /** Registra una advertencia. */
+  /** A warning. Always written: nobody turns tracing on to find out it happened. */
   static warn(message: string): void {
-    this.log(`WARN: ${message}`);
+    this.write(`WARN: ${message}`);
   }
 
-  /** Registra un error; si hay objeto Error también escribe su stack. */
+  /** An error; with an Error object, its stack too. Always written. */
   static error(message: string, error?: unknown): void {
-    this.log(`ERROR: ${message}`);
+    this.write(`ERROR: ${message}`);
     if (error instanceof Error) {
-      this.log(error.message);
+      this.write(error.message);
       if (error.stack) {
-        this.log(error.stack);
+        this.write(error.stack);
       }
     }
   }
 
-  /** Muestra el canal de salida en la UI. */
-  static show(): void {
-    this.outputChannel.show();
+  private static write(message: string): void {
+    // Never on the way to the channel from a path that runs before `initialize`
+    // (a module-level throw during activation): losing a line beats losing the
+    // activation.
+    this.outputChannel?.appendLine(`[${new Date().toISOString()}] ${message}`);
   }
-} 
+
+  /** Shows the output channel in the UI. */
+  static show(): void {
+    this.outputChannel?.show();
+  }
+
+  static dispose(): void {
+    this.configListener?.dispose();
+    this.configListener = undefined;
+  }
+}

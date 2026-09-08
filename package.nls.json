@@ -40,6 +40,7 @@
   "config.syncCursorPosition": "Synchronize cursor position (line and column) between parent bays and their children (diffs, snapshots, etc.). When enabled, moving the cursor in one bay will update all related bays.",
   "config.animations": "Master switch for everything the view moves: the close animation, the state-change pulse and the tooltip fade. It is also turned off by `workbench.reduceMotion`.",
   "config.followProductIconTheme": "Draw the panel's glyphs with the product icon theme selected in `workbench.productIconTheme`, like the rest of the workbench. Off, the panel keeps the codicons the extension ships, and nothing is read from disk.",
+  "config.trace": "Write a detailed trace of what the extension is doing to the Bays output channel. Off by default: those lines are for debugging, and writing them costs a timestamp and a channel round trip on paths that run once per tab. Warnings and errors are written either way.",
   "capabilities.untrustedWorkspaces": "Bays only reads the list of open editors and their git and diagnostic state. It never runs code from the workspace.",
   "capabilities.virtualWorkspaces": "Bays works in a virtual workspace. File actions that need a file on disk, and git state, are not available there."
 }
