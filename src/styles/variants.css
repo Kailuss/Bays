@@ -40,6 +40,13 @@
   padding-left: 32px;
 }
 
+/* The rule under a row is placed against the PADDING edge, and this row's is
+   pushed in by the accent bar: pulled back by its width, the line stays on the
+   column every other one in the list is drawn on. */
+.bay.variant.active::after {
+  left: calc(var(--bays-card-gap) - 4px);
+}
+
 .bay.variant.active:hover {
   background: var(--vscode-list-activeSelectionBackground, rgba(90,93,94,0.3));
 }

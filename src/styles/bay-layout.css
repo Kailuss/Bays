@@ -12,7 +12,6 @@
   padding: 0 8px 0 8px;
   background: var(--vscode-bay-inactiveBackground, transparent);
   color: var(--vscode-bay-inactiveForeground, var(--vscode-foreground));
-  border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
   cursor: pointer;
   /* The band is positioned against this row, and clipped by it. */
   position: relative;
@@ -34,6 +33,45 @@
     transform     200ms cubic-bezier(0.4, 0, 0.2, 1),
     opacity       200ms ease,
     padding-right var(--bays-row-action-ms) ease;
+}
+
+/* The rule between two rows, PAINTED and not a border. A border is part of the
+   row's own box, so shortening it would mean shortening the row, and what is
+   wanted is a shorter LINE over a row that stays exactly as wide as it is.
+   Positioned out of flow it costs nothing of the layout.
+
+   It stops short of both edges by the group header's own margin, so the line
+   runs between the same two columns as the card that heads the list.
+
+   `bottom: 0` and never a negative offset: a variant row carries
+   `contain: strict`, whose paint containment clips to the padding edge, so
+   anything hung below it would simply not be drawn on those rows.
+
+   `pointer-events: none` because a row is pressed anywhere along it, and this
+   lies over its last pixel. */
+.bay::after {
+  content: '';
+  position: absolute;
+  left: var(--bays-card-gap);
+  right: var(--bays-card-gap);
+  bottom: 0;
+  height: 1px;
+  background: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
+  pointer-events: none;
+}
+
+/* The LAST row of a group carries none: what comes next is the next group's
+   header, a card loose of the rows with its own gutter and ring around it, so a
+   rule there is a second edge drawn against one that already closes the list.
+   The last row of the whole list answers the same way, against the panel's own
+   bottom edge.
+
+   Scoped to `#bays >` because the drag CLONE is a `.bay-block` hanging from the
+   `<body>`, where it is the last child: unscoped, picking a block up would rub
+   out the rule inside it. */
+#bays > .bay-block:has(+ .group-header) > .bay:last-child::after,
+#bays > .bay-block:last-child > .bay:last-child::after {
+  display: none;
 }
 
 /* How much room to open, and it has to be COUNTED here: unlike Atria's pinned
