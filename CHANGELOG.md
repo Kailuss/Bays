@@ -7,6 +7,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.7] - 2026-09-08
+
+### Added
+
+- `bays.trace` (off): writes a detailed trace to the Bays output channel.
+  Warnings and errors are written either way.
+
+### Changed
+
+- Git state is read from a per-repository index by path instead of by walking
+  the change lists.
+- Path fitting measures once per typeface and text, and only re-measures the
+  rows a render built.
+- Rows are laid out with CSS containment.
+- Claude Code conversation titles resolve their candidate transcripts once per
+  pass, and the pass is coalesced.
+- Git status and diagnostics are read once per tab conversion.
+- The stylesheet is minified in production builds.
+- Trace logging is off unless `bays.trace` is on.
+
 ## [0.4.6] - 2026-09-08
 
 ### Fixed
