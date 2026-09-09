@@ -177,7 +177,17 @@ function buildVariantRow(variant: VariantView): HTMLDivElement {
   if (variant.stats) {
     const stats = el('span', `variant-stats${variant.stats.conflict ? ' conflict' : ''}`);
     setTip(stats, variant.stats.tooltip);
-    stats.textContent = variant.stats.text;
+    if (variant.stats.counts) {
+      // Two spans and not one string: each number takes the colour the theme
+      // gives added and removed lines, the same pair a row's git state wears.
+      const added = el('span', 'stats-added');
+      added.textContent = `+${variant.stats.counts.added}`;
+      const removed = el('span', 'stats-removed');
+      removed.textContent = `-${variant.stats.counts.removed}`;
+      stats.append(added, removed);
+    } else {
+      stats.textContent = variant.stats.text ?? '';
+    }
     row.appendChild(stats);
   }
 

@@ -164,6 +164,8 @@
     margin-right: 4px;
 }
 
+/* The two numbers of a line count wear the colours the theme gives added and
+   removed lines: the same pair a row's git state is written in. */
 .stats-added {
   color: var(--bays-git-added);
 }

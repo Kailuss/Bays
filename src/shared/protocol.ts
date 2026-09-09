@@ -128,8 +128,12 @@ export type VariantView = {
   tooltip : string;
   active  : boolean;
   canClose: boolean;
-  /** Lo que la variante cuenta de sí misma (+12-3, "hace 2 h", 3 conflictos). */
-  stats?  : { text: string; tooltip: string; conflict?: boolean };
+  /**
+   * Lo que la variante cuenta de sí misma (+12 -3, "hace 2 h", 3 conflictos).
+   * Una cuenta de líneas viaja como DOS números y no como texto: cada uno se
+   * escribe del color con el que el tema pinta lo añadido y lo quitado.
+   */
+  stats?  : { text?: string; counts?: { added: number; removed: number }; tooltip: string; conflict?: boolean };
 };
 
 /** Una fila de la lista. */

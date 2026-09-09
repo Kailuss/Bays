@@ -322,7 +322,7 @@ function variantStats(bay: Bay): VariantView['stats'] {
 
   if (linesAdded !== undefined && linesRemoved !== undefined) {
     return {
-      text   : `+${linesAdded} -${linesRemoved}`,
+      counts : { added: linesAdded, removed: linesRemoved },
       tooltip: `${linesAdded} lines added, ${linesRemoved} lines removed`,
     };
   }
