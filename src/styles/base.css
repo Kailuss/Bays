@@ -82,6 +82,17 @@ body.no-motion {
   box-sizing: border-box;
 }
 
+/* An `<img>` drags ITSELF. Press one and move, and the browser starts its own
+   image drag on top of ours, which ends the stream of mouse moves the block was
+   following: grabbing a bay by its icon carried the picture off and left the row
+   where it was. The row icons are the theme's and arrive as markup the host
+   composes, so there is no element here to write `draggable` on — and written on
+   every image rather than on the one that exists today, the next one added
+   arrives without a drag of its own. */
+img {
+  -webkit-user-drag: none;
+}
+
 body {
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
