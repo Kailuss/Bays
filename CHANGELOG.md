@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.22] - 2026-09-09
+
+### Fixed
+
+- The rule under a row is exactly one device pixel tall, so it no longer comes
+  out twice as thick under some rows on a scaled display.
+
 ## [0.4.21] - 2026-09-09
 
 ### Changed
