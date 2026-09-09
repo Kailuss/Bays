@@ -318,6 +318,10 @@ const NOT_OURS = new Set([
 	'fontCharacter', 'iconDefinitions', 'fileExtensions', 'languageIds',
 	'onDidChange', 'getAPI', 'preserveFocus', 'viewColumn', 'isDirty',
 	'preLaunchTask', 'endsPattern',
+	// De VS CODE, del comando con el que se muda una tab: el orden en el que
+	// `moveActiveEditor` indexa los grupos, y las dos mitades del nombre de los
+	// comandos con ordinal que la guia explica que NO existen.
+	'GRID_APPEARANCE', 'Ordinal', 'ToSecondGroup',
 	// RETIRADO a propósito, y la prosa lo NOMBRA a propósito: el argumento de lo
 	// que hay hoy es la forma a la que sustituyó, o la que nunca existió.
 	'PreviewService',

@@ -42,16 +42,6 @@ export class BayHelpers {
     7: 'workbench.action.focusSeventhEditorGroup',
     8: 'workbench.action.focusEighthEditorGroup',
   };
-  private static readonly MOVE_TO_GROUP_CMDS: Record<number, string> = {
-    1: 'workbench.action.moveEditorToFirstGroup',
-    2: 'workbench.action.moveEditorToSecondGroup',
-    3: 'workbench.action.moveEditorToThirdGroup',
-    4: 'workbench.action.moveEditorToFourthGroup',
-    5: 'workbench.action.moveEditorToFifthGroup',
-    6: 'workbench.action.moveEditorToSixthGroup',
-    7: 'workbench.action.moveEditorToSeventhGroup',
-    8: 'workbench.action.moveEditorToEighthGroup',
-  };
 
   //· --- SETS DE EXTENSIONES (O(1) lookup, inicializados una sola vez) ---
   private static readonly EXT_CONFIG   = new Set(['.json', '.yaml', '.yml', '.toml', '.ini', '.env']);
@@ -81,13 +71,33 @@ export class BayHelpers {
     if (cmd) { await vscode.commands.executeCommand(cmd); }
   }
   /**
-   * Moves the ACTIVE editor to another group via the native workbench command.
-   * The only way to relocate a webview tab (no URI to reopen) between groups, so
-   * the caller must activate the source tab first. Works for any tab type.
+   * Lleva el editor ACTIVO a otro grupo. Es la única vía para reubicar una tab de
+   * webview —no tiene URI que reabrir— así que quien llama tiene que activar
+   * antes la tab de origen. Vale para cualquier tipo de tab.
+   *
+   * **Va por `moveActiveEditor`, el ÚNICO comando que acepta a qué grupo.** Fue
+   * una tabla de `workbench.action.moveEditorTo<Ordinal>Group`, y de esos
+   * ordinales **el workbench solo registra `First` y `Last`**: comprobado contra
+   * los bundles de 1.109, 1.128 y 1.133, `…ToSecondGroup` no existe en ninguno de
+   * los tres. Un comando que no existe RECHAZA, así que la excepción subía hasta
+   * `moveBetweenGroups` y el movimiento se deshacía — o sea que mover una bay
+   * funcionaba hacia el grupo 1 y hacia ningún otro. Un fallo ASIMÉTRICO por
+   * dirección, que es lo que lo hacía tan difícil de leer: parecía un arrastre
+   * roto y era un id que no existe.
+   *
+   * Las órdenes con nombre del workbench son envoltorios de éste con `{to, by}`
+   * fijos, así que esto no rodea nada: es la misma puerta por la que ya entraban.
+   *
+   * `to: 'position'` con `by: 'group'` indexa `getGroups(GRID_APPEARANCE)` en
+   * base 1, que es exactamente lo que numera una `ViewColumn` — la misma
+   * correspondencia de la que ya vive `FOCUS_GROUP_CMDS`.
    */
   static async moveActiveEditorToGroup(viewColumn: vscode.ViewColumn): Promise<void> {
-    const cmd = BayHelpers.MOVE_TO_GROUP_CMDS[viewColumn];
-    if (cmd) { await vscode.commands.executeCommand(cmd); }
+    await vscode.commands.executeCommand(VSCODE_COMMANDS.MOVE_ACTIVE_EDITOR, {
+      to   : 'position',
+      by   : 'group',
+      value: viewColumn,
+    });
   }
   static async activateByNativeTab(metadata: BayMetadata, state: BayState): Promise<void> {
     const nativeTab = BayHelpers.findNativeTab(metadata, state);
