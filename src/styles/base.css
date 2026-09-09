@@ -29,13 +29,16 @@
 
   /* === The rule between two rows =========================================
 
-     Its colour and how far each end fades out.
+     Its colour and how far each end fades out. The fade reaches well into the
+     line rather than nicking its tips: what the rule has to say is where a row
+     ends, which is said in the MIDDLE, and a fade that only clips the last few
+     pixels reads as a line that was cut rather than one that runs out.
 
      There is no dash length any more. A broken rule was what ran between a bay
      and the first of its variants, and a block carries no rule inside it at
      all now — see `.bay:not(:last-child)` in `bay-layout.css`. */
   --bays-rule: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
-  --bays-rule-fade: 16px;
+  --bays-rule-fade: 32px;
 
   /* === The colours a row writes its state in =============================
 
