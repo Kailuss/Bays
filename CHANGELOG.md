@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.18] - 2026-09-09
+
+### Fixed
+
+- Moving a bay to another group takes every one of its variants with it. A
+  Working Tree diff could stay behind under the group it had left.
+- A variant is never drawn on its own. One whose file is closed, or whose tab
+  sits in another group, is drawn as a bay with its native label.
+
 ## [0.4.17] - 2026-09-09
 
 ### Fixed
