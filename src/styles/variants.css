@@ -33,20 +33,19 @@
   cursor: pointer;
 }
 
-/* An active variant grows NOTHING: no bar down its left edge and no surface of
-   its own. Both were edges drawn inside a block that draws none, and the bar
-   cost a second piece of arithmetic besides — it ate 4px of the indent so the
-   icon would not step aside, and the rule under the row had to be pulled back by
-   that same 4px to stay on the column every other line is drawn on. What marks
-   an active variant is its NAME, in the theme's active colour
-   (`bay-states.css`), which is the mark an active bay carries too. */
+/* An active variant grows NOTHING of its own: no bar down its left edge and no
+   surface that stops at its row. Both were edges drawn inside a block that
+   draws none, and the bar cost a second piece of arithmetic besides — it ate
+   4px of the indent so the icon would not step aside, and the rule under the
+   row had to be pulled back by that same 4px to stay on the column every other
+   line is drawn on. The surface it does take is the BLOCK's, lit whole
+   (`bay-states.css`); what marks the variant within it is its NAME, in the
+   theme's active colour, which is the mark an active bay carries too. */
 
 /* While one of its variants is the focused tab — a diff, a snapshot, the
    rendered preview of a markdown — the parent's NAME keeps the weight of a
-   selected row. That is now the whole of what it keeps: it wore a selection
-   surface as well, which lit two rows in two colours for one thing being looked
-   at, and contradicted the rule that a block wears one surface and does not
-   repaint when a variant is activated.
+   selected row. The surface is the block's and lights whole (`bay-states.css`);
+   the weight is what the parent adds.
 
    The weight is what makes the pair readable: the parent stays MARKED and the
    variant is the one you are in. Without it, selecting a variant left its file's
