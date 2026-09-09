@@ -11,7 +11,14 @@ import type { DropBayMessage } from '../shared/protocol';
 
 const DRAG_THRESHOLD = 5;   // Pixels antes de iniciar el drag
 
-type GroupRegion = { groupId: string; top: number; bottom: number; headerEl: HTMLElement };
+type GroupRegion = {
+  groupId : string;
+  top     : number;
+  bottom  : number;
+  /** Donde EMPIEZA de verdad el grupo, antes de ensanchar la banda. */
+  anchor  : number;
+  headerEl: HTMLElement | null;
+};
 type SiblingSlot = { el: HTMLElement; origTop: number; height: number };
 
 let isDragging         = false;
@@ -107,20 +114,51 @@ export function initDragDrop(): void {
 
     // Centro del bloque clonado para determinar posición de inserción
     const cloneCenter = startY + (blockHeight / 2) + dy;
-    const overGroup   = groupAt(cloneCenter);
 
-    if (lockedSource || overGroup === null || overGroup === tabGroupId) {
-      // Sobre el grupo de origen (o sin grupos, o grupo bloqueado): reordenar in
-      // situ. El host rechaza sacar bays de un grupo bloqueado, así que ni
-      // resaltamos el destino: el arrastre sólo animaría para volver a su sitio.
+    // A qué grupo se lleva la bay lo dice el PUNTERO y no el centro del clon.
+    // Los dos se separan tanto como mida el bloque: agarrado por su última
+    // variante, el centro va media altura por encima de la mano, así que con un
+    // bloque alto había que pasarse esa media altura por debajo de la cabecera
+    // del grupo de abajo para que contara — y arrastrando hacia el último grupo
+    // de la lista, esa distancia puede no existir dentro del panel. Lo que se
+    // arrastra se SUELTA donde se apunta.
+    //
+    // El centro se queda para la reordenación local, que es otra pregunta: ahí
+    // no se apunta a nada sino que se busca la RANURA en la que cabe el bloque,
+    // y una ranura la decide dónde queda el bloque entero.
+    const overGroup = groupAt(e.clientY);
+
+    if (overGroup === null || overGroup === tabGroupId) {
+      // Sobre el grupo de origen, o sin más grupos: reordenar in situ.
       clearTargetGroupHighlight();
+      markRefused(false);
       updateSiblingPositions(cloneCenter);
       targetGroupId = tabGroupId ?? null;
     } else {
       // Sobre otro grupo: cancelar el desplazamiento local y resaltar el destino.
       clearSiblingShifts();
-      setTargetGroupHighlight(overGroup);
       targetGroupId = overGroup;
+
+      // Un grupo BLOQUEADO no deja salir nada de él, y eso se dice mientras dura
+      // el gesto en vez de callarse: el clon se atenúa y el destino no se
+      // resalta, porque no lo es. Esta rama se leía antes como una reordenación
+      // dentro del grupo de origen —el arrastre no decía nada en absoluto— y es
+      // el rechazo ASIMÉTRICO de los cuatro: no se puede sacar una bay de un
+      // grupo bloqueado y sí meterla, así que el arrastre parecía funcionar hacia
+      // un lado y estar roto hacia el otro.
+      //
+      // Y se manda IGUAL al soltar. Quien decide la política es el HOST —es quien
+      // ve el candado de verdad, y quien rechaza los otros tres motivos— así que
+      // el cliente no se le adelanta: lo que hace aquí es una pista temprana, y
+      // la palabra la tiene el aviso que sale al soltar. Adelantándose, el motivo
+      // más común de todos era el único que nunca llegaba a decirse.
+      if (lockedSource) {
+        clearTargetGroupHighlight();
+        markRefused(true);
+      } else {
+        markRefused(false);
+        setTargetGroupHighlight(overGroup);
+      }
     }
   });
 
@@ -238,8 +276,13 @@ function commitDrop(): void {
       targetGroupId : parseInt(targetGroupId ?? '', 10),
     } satisfies DropBayMessage);
 
+    // Un grupo puede no tener cabecera —el host no la manda con uno solo
+    // poblado— así que el puente visual cae en el borde de arriba del grupo, que
+    // es la banda MEDIDA y nunca la ensanchada.
     const region  = groupRegions.find(r => r.groupId === targetGroupId);
-    const destTop = region ? region.headerEl.getBoundingClientRect().bottom : startY;
+    const destTop = region
+      ? (region.headerEl?.getBoundingClientRect().bottom ?? region.anchor)
+      : startY;
     cloneEl.style.transition = 'transform 160ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 160ms ease-out';
     cloneEl.style.transform  = 'translateY(' + (destTop - startY) + 'px) scale(0.85)';
     cloneEl.style.opacity    = '0';
@@ -306,21 +349,67 @@ function commitDomMove(src: HTMLElement, ref: HTMLElement, after: boolean): void
 
 // ------------ cross-group helpers ------------
 
-// Calcula la banda vertical [top, bottom) que ocupa cada grupo, delimitada por
-// las cabeceras. Con una sola cabecera (o ninguna) no hay destino alternativo.
+// La banda vertical [top, bottom) que ocupa cada grupo.
+//
+// Se compone de lo que el grupo DE VERDAD ocupa —su cabecera y la caja de sus
+// filas, que es la unión de las dos— y no de una cabecera a la siguiente. Las
+// dos llevan `data-groupid`, así que cada banda se arma de sus propios
+// elementos en vez de deducirse de la posición de un vecino: un orden inesperado
+// en el DOM daba una banda invertida, y una banda invertida no contiene ningún
+// punto — el grupo dejaba de existir como destino sin que nada lo dijera.
+//
+// Y no queda ni una ZONA MUERTA. El hueco entre dos tarjetas pertenece a la de
+// arriba, y los dos extremos llegan a los bordes del panel: medida de cabecera a
+// cabecera, la franja que hay POR ENCIMA de la primera —el margen de su
+// tarjeta— no era de nadie, así que arrastrar hacia arriba pasándose un poco
+// contestaba `null` y el gesto se leía como una reordenación dentro del grupo de
+// origen. Pasarse hacia el grupo al que se apunta es lo normal cuando se apunta
+// al primero de la lista.
 function buildGroupRegions(): GroupRegion[] {
-  const headers = Array.from(document.querySelectorAll<HTMLElement>('.group-header'));
-  if (headers.length === 0) { return []; }
+  const bands = new Map<string, { top: number; bottom: number; headerEl: HTMLElement | null }>();
 
-  const regions: GroupRegion[] = headers.map(h => ({
-    groupId : h.dataset.groupid ?? '',
-    top     : h.getBoundingClientRect().top,
-    bottom  : Number.POSITIVE_INFINITY,
-    headerEl: h,
-  }));
+  const note = (id: string, el: HTMLElement, header: HTMLElement | null): void => {
+    const rect = el.getBoundingClientRect();
+    // Una caja PLEGADA es `display: none` y su rectángulo es todo ceros: metida
+    // en la unión arrastraría la banda hasta el borde de arriba del panel.
+    if (rect.height === 0) { return; }
+    const band = bands.get(id);
+    if (!band) {
+      bands.set(id, { top: rect.top, bottom: rect.bottom, headerEl: header });
+      return;
+    }
+    band.top    = Math.min(band.top, rect.top);
+    band.bottom = Math.max(band.bottom, rect.bottom);
+    band.headerEl = band.headerEl ?? header;
+  };
+
+  document
+    .querySelectorAll<HTMLElement>('.group-header')
+    .forEach(h => note(h.dataset.groupid ?? '', h, h));
+  document
+    .querySelectorAll<HTMLElement>('.group-rows')
+    .forEach(r => note(r.dataset.groupid ?? '', r, null));
+
+  const regions: GroupRegion[] = Array.from(bands, ([groupId, band]) => ({
+    groupId,
+    top     : band.top,
+    bottom  : band.bottom,
+    anchor  : band.top,
+    headerEl: band.headerEl,
+  })).sort((a, b) => a.top - b.top);
+
+  // Con menos de dos no hay ningún sitio al que llevar la bay, y decirlo así es
+  // lo que deja el resto del gesto en la rama de reordenar sin condiciones
+  // extra: con un solo grupo poblado el host no manda cabecera, así que la
+  // cuenta que importa es la de BANDAS y no la de cabeceras.
+  if (regions.length < 2) { return []; }
+
   for (let i = 0; i < regions.length - 1; i++) {
     regions[i].bottom = regions[i + 1].top;
   }
+  regions[0].top = Number.NEGATIVE_INFINITY;
+  regions[regions.length - 1].bottom = Number.POSITIVE_INFINITY;
+
   return regions;
 }
 
@@ -338,6 +427,16 @@ function clearSiblingShifts(): void {
   if (currentInsertIndex === sourceIndex) { return; }
   originalOrder.forEach(s => { s.el.style.transform = ''; });
   currentInsertIndex = sourceIndex;
+}
+
+/**
+ * El clon dice que ahí no cae.
+ *
+ * Es lo único que un arrastre rechazado puede decir MIENTRAS dura, y sin ello el
+ * gesto no se distingue de uno que funciona hasta que se suelta y no pasa nada.
+ */
+function markRefused(refused: boolean): void {
+  cloneEl?.classList.toggle('drag-refused', refused);
 }
 
 function setTargetGroupHighlight(groupId: string): void {

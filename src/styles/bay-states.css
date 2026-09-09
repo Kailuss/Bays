@@ -39,6 +39,16 @@
   transform: scale(0.9);
 }
 
+/* Y el clon dice que ahí NO cae: atenuado y sin la sombra que lo levanta, o sea
+   lo contrario de una carta en el aire. No lleva cursor de prohibido porque no
+   hay ninguno que poner — el clon no recibe puntero y el `<body>` fija el suyo
+   mientras dura el gesto (`body.drag-active`), así que lo único que queda para
+   decirlo es el propio bloque. */
+.bay-block.drag-clone.drag-refused {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
 /* Placeholder invisible */
 .bay-block.drag-placeholder {
   opacity: 0;
@@ -57,8 +67,26 @@ body.drag-active {
   cursor: default;
 }
 
-/* Bloques pinned no interactivos durante drag */
-body.drag-active .bay-block[data-pinned="true"] {
+/* Durante un arrastre NINGUNA fila contesta al puntero, esté en el grupo que
+   esté. Lo hacían solo las del grupo de ORIGEN —son las que llevan
+   `.drag-shifting`— y las fijadas, así que el clon cruzaba las de los demás
+   grupos encendiéndolas una a una: cada una levantaba su hover y abría su banda
+   de órdenes bajo un bloque que se está moviendo. Lo que dice cuál es el grupo
+   de destino es `.drag-target-group`, y una fila iluminándose por su cuenta
+   compite justo con eso.
+
+   Y la CABECERA con ellas, por lo mismo un escalón más arriba: sus tres órdenes
+   llegan con el puntero (`.group-header:hover .group-btn`), así que un clon
+   cruzándola le abría la banda entera — y encima justo encima de la marca que sí
+   tiene algo que decir ahí, que es `.drag-over`. Lo que se queda es el candado de
+   un grupo bloqueado, que no espera al puntero porque reporta un ESTADO.
+
+   Y no le cuesta nada al gesto: dónde cae el drop lo deciden las COORDENADAS
+   (`buildGroupRegions` y `groupAt`) y no un hit test, y quien oye el `mouseup`
+   es el documento. El clon ya venía con lo suyo, y con esta regla lo llevaría
+   igual — cuelga del `<body>`, que es donde está la clase. */
+body.drag-active .bay-block,
+body.drag-active .group-header {
   pointer-events: none;
 }
 
