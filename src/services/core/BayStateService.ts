@@ -386,8 +386,11 @@ export class BayStateService {
     return this.groups.get(id);
   }
 
+  // Sorted by column and never in insertion order: the safety net in `addBay`
+  // creates a group the moment its first bay arrives, so a split opened at
+  // runtime lands AFTER groups with a higher column and the list read 1 3 2 4.
   getGroups(): BayGroup[] {
-    return Array.from(this.groups.values());
+    return Array.from(this.groups.values()).sort((a, b) => a.viewColumn - b.viewColumn);
   }
 
   //- Search
