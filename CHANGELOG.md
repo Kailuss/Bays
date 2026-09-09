@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.20] - 2026-09-09
+
+### Fixed
+
+- The view declares its icon, so it keeps it when moved to another container.
+- Activating a variant lights its whole block with the active surface, as
+  activating the file does.
+
 ## [0.4.19] - 2026-09-09
 
 ### Fixed
