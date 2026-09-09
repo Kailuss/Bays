@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.17] - 2026-09-09
+
+### Fixed
+
+- A file with errors is written in the colour a native tab writes it in, and no
+  longer in the red of the squiggle under the text. Warnings take the same pair,
+  which parted company in the light themes.
+
 ## [0.4.16] - 2026-09-09
 
 ### Fixed
