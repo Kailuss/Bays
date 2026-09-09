@@ -3,11 +3,12 @@ import { ViewConfiguration }    from '../services/ui/ViewConfiguration';
 import { ProductIconService }   from '../services/ui/ProductIconService';
 import { TIMINGS }              from '../constants/timings';
 import { Bay }                  from '../models/Bay';
-import { BayGroup }              from '../models/BayGroup';
+import { BayGroup, getGroupLabel } from '../models/BayGroup';
 import { BayStateService }      from '../services/core/BayStateService';
 import { BayIconManager }       from '../services/ui/BayIconManager';
 import { CopilotService }       from '../services/integration/CopilotService';
 import { BayDragDropService }   from '../services/ui/BayDragDropService';
+import type { MoveRefusal }     from '../services/ui/BayDragDropService';
 import { FileActionRegistry }   from '../services/registry/FileActionRegistry';
 import { Logger }               from '../platform/logger';
 import { activeGroupId } from '../platform/activeGroup';
@@ -448,6 +449,15 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
 
   private async handleDropBay(msg: DropBayMessage): Promise<void> {
     const { sourceBayId, targetBayId, insertPosition, sourceGroupId, targetGroupId } = msg;
+
+    // El primer eslabon del drop, dicho en voz alta: sin esta linea, un gesto que
+    // no mueve nada no distingue entre un cliente que no llego a mandar el
+    // mensaje y un host que lo rechazo. Todo lo que puede rechazarlo a partir de
+    // aqui se lee en el mismo canal.
+    Logger.log('[Bays] dropBay: ' + sourceBayId
+      + ' | group ' + sourceGroupId + ' -> ' + targetGroupId
+      + ' | target ' + (targetBayId ?? 'none') + ' ' + (insertPosition ?? ''));
+
     if (sourceGroupId === targetGroupId) {
       // The webview already committed the DOM move; only reconcile the model.
       // If the reorder was rejected, refresh to restore the authoritative order.
@@ -464,8 +474,47 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     // If it's rejected (a pinned bay, a locked source group, a tab that can no
     // longer be found), nothing rebuilds: refresh to restore the DOM, otherwise
     // the client-faded block would just vanish.
-    const moved = await this.dragDropService.moveBetweenGroups(sourceBayId, targetGroupId, targetBayId ?? undefined);
-    if (!moved) { this.refresh(); }
+    const refusal = await this.dragDropService.moveBetweenGroups(sourceBayId, targetGroupId, targetBayId ?? undefined);
+    if (!refusal) { return; }
+    this.refresh();
+    this.reportMoveRefusal(refusal, sourceBayId, targetGroupId);
+  }
+
+  /**
+   * Por qué una bay no se ha ido al grupo al que la llevaron.
+   *
+   * Un drop que no mueve nada se ve exactamente igual que uno que no ha
+   * ocurrido: el bloque se anima de vuelta a su sitio y ahí se acaba. Es la misma
+   * regla que ya siguen los chips de una tarjeta —un control que no hace nada se
+   * lee como una vista rota— y aquí pesa el doble, porque el motivo más común es
+   * ASIMÉTRICO: un grupo de origen bloqueado no deja salir nada de él, así que el
+   * arrastre parece funcionar hacia un lado y estar roto hacia el otro.
+   *
+   * Solo se DICEN los rechazos de política, que son sobre los que se puede
+   * actuar; lo demás es un fallo interno y ya está en el canal, que es donde se
+   * lee un fallo. La una excepción es `failed`: eso es git —o el workbench—
+   * negándose, y tragárselo es lo que esta regla existe para evitar.
+   */
+  private reportMoveRefusal(refusal: MoveRefusal, sourceBayId: string, targetGroupId: number): void {
+    if (refusal === 'locked') {
+      void vscode.window.showWarningMessage(
+        vscode.l10n.t('A locked group does not let its bays leave it'));
+      return;
+    }
+    if (refusal === 'pinned') {
+      void vscode.window.showWarningMessage(
+        vscode.l10n.t('A pinned bay cannot be moved to another group'));
+      return;
+    }
+    if (refusal === 'failed') {
+      const bay   = this.findBay(sourceBayId);
+      const group = this.stateService.getGroup(targetGroupId);
+      void vscode.window.showWarningMessage(vscode.l10n.t(
+        'Could not move {0} to {1}',
+        bay?.metadata.label ?? sourceBayId,
+        group ? getGroupLabel(group) : String(targetGroupId),
+      ));
+    }
   }
 
   private async handleFileAction(bayId: string, actionId: string): Promise<void> {

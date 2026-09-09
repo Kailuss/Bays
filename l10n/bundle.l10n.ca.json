@@ -1,4 +1,6 @@
 {
+  "A locked group does not let its bays leave it": "Un grup bloquejat no deixa sortir les seves dàrsenes",
+  "A pinned bay cannot be moved to another group": "Una dàrsena fixada no es pot moure a un altre grup",
   "Add to Copilot Chat": "Afegeix al xat del Copilot",
   "Added (Staged)": "Afegit (preparat)",
   "Added {0} file(s) to Copilot Chat context": "{0} fitxer(s) afegits al context del xat del Copilot",
@@ -9,6 +11,7 @@
   "Conflict": "Conflicte",
   "Copied as a Base64 data URI": "Copiat com a URI de dades Base64",
   "Copied: {0}": "Copiat: {0}",
+  "Could not move {0} to {1}": "No s'ha pogut moure {0} a {1}",
   "Deleted": "Suprimit",
   "Error": "Error",
   "Failed to attach file to Copilot Chat: {0}": "No s'ha pogut adjuntar el fitxer al xat del Copilot: {0}",

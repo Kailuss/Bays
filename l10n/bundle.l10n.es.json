@@ -1,4 +1,6 @@
 {
+  "A locked group does not let its bays leave it": "Un grupo bloqueado no deja salir sus bahías",
+  "A pinned bay cannot be moved to another group": "Una bahía anclada no se puede mover a otro grupo",
   "Add to Copilot Chat": "Añadir al chat de Copilot",
   "Added (Staged)": "Añadido (preparado)",
   "Added {0} file(s) to Copilot Chat context": "{0} archivo(s) añadidos al contexto del chat de Copilot",
@@ -9,6 +11,7 @@
   "Conflict": "Conflicto",
   "Copied as a Base64 data URI": "Copiado como URI de datos Base64",
   "Copied: {0}": "Copiado: {0}",
+  "Could not move {0} to {1}": "No se ha podido mover {0} a {1}",
   "Deleted": "Eliminado",
   "Error": "Error",
   "Failed to attach file to Copilot Chat: {0}": "No se pudo adjuntar el archivo al chat de Copilot: {0}",

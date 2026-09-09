@@ -3,6 +3,19 @@ import { Bay }    from '../../models/Bay';
 import { Logger }          from '../../platform/logger';
 
 /**
+ * Por qué NO se ha movido una bay a otro grupo.
+ *
+ * Se devuelve el motivo y no un `false`, porque un drop que no mueve nada tiene
+ * que poder decir por qué: los cuatro rechazos de política se veían todos igual
+ * —el bloque animándose de vuelta a su sitio— y uno de ellos, el grupo de origen
+ * BLOQUEADO, es asimétrico por dirección, así que se lee como que el arrastre
+ * funciona hacia un lado y está roto hacia el otro.
+ *
+ * `null` es que se movió, que es la respuesta que no lleva motivo.
+ */
+export type MoveRefusal = 'no-bay' | 'variant' | 'pinned' | 'locked' | 'no-group' | 'failed';
+
+/**
  * Service dedicated to drag & drop management of bays.
  * Handles reordering logic respecting restrictions:
  * - Pinned bays cannot be moved
@@ -107,19 +120,28 @@ export class BayDragDropService {
     targetGroupId: number,
     targetBayId?: string,
     //insertPosition?: 'before' | 'after',
-  ): Promise<boolean> {
+  ): Promise<MoveRefusal | null> {
     const sourceBay = this.stateService.getBayById(sourceBayId);
-    if (!sourceBay) { return false; }
+    // Los dos rechazos de este metodo que no decian nada, dichos: un drop que no
+    // mueve nada se ve igual que uno que no ha ocurrido, y los otros dos motivos
+    // —una variante, un grupo bloqueado— ya se leen en el canal.
+    if (!sourceBay) {
+      Logger.warn('[DragDrop] Blocked: no bay with id ' + sourceBayId);
+      return 'no-bay';
+    }
 
     // Restriction: child bays (variants) follow their parent — never move alone.
     // Mirrors reorderWithinGroup; without it a variant could be torn off its group.
     if (sourceBay.metadata.sourceBayId) {
       Logger.log('[DragDrop] Blocked: variant bays cannot be moved between groups');
-      return false;
+      return 'variant';
     }
 
     // Restriction: pinned bays cannot be moved
-    if (sourceBay.state.isPinned) { return false; }
+    if (sourceBay.state.isPinned) {
+      Logger.log('[DragDrop] Blocked: bay is pinned');
+      return 'pinned';
+    }
 
     // Restriction: a locked group doesn't let its bays leave, which is what the
     // lock says and all it has to say. It used to be argued from the mechanics —
@@ -131,17 +153,22 @@ export class BayDragDropService {
     const sourceGroup = this.stateService.getGroup(sourceBay.state.groupId);
     if (sourceGroup?.isLocked) {
       Logger.log('[DragDrop] Blocked: source group is locked');
-      return false;
+      return 'locked';
     }
 
     const targetGroup = this.stateService.getGroup(targetGroupId);
-    if (!targetGroup) { return false; }
+    if (!targetGroup) {
+      Logger.warn('[DragDrop] Blocked: no group ' + targetGroupId
+        + ' (open: ' + this.stateService.getGroups().map(g => g.id).join(', ') + ')');
+      return 'no-group';
+    }
 
     // If there's a specific target, check restrictions
     if (targetBayId) {
       const targetBay = this.stateService.getBayById(targetBayId);
       if (targetBay && targetBay.state.isPinned) {
-        return false; // Don't allow drop over pinned bays
+        Logger.log('[DragDrop] Blocked: target bay is pinned');
+        return 'pinned';
       }
     }
 
@@ -160,10 +187,10 @@ export class BayDragDropService {
       const hierarchy = this.stateService.getHierarchyService();
       await (hierarchy?.moveBayWithVariants(sourceBay, targetGroupId)
              ?? sourceBay.moveToGroup(targetGroupId));
-      return true;
+      return null;
     } catch (error) {
       Logger.error('[BayDragDrop] Failed to move bay between groups:', error);
-      return false;
+      return 'failed';
     }
   }
 
