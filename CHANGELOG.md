@@ -7,6 +7,28 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.16] - 2026-09-09
+
+### Fixed
+
+- Dragging a bay by its icon carries the whole block, and no longer the picture
+  on its own.
+
+### Changed
+
+- A bay and its variants are drawn as one block: the same surface in every
+  state, no rule between them, and no accent bar down the left edge of an active
+  variant.
+- An active variant is marked by its name, in the theme's active colour.
+- A bay keeps its surface while one of its variants is the active tab. Its name
+  still takes the weight of a selected row, which is what says the diff belongs
+  to that file.
+- The colours a row's state is written in are named once, and every stylesheet
+  reads them from there.
+- Where a theme names no chart colours, the mark of an unknown diff is drawn in
+  chart orange.
+- The fade at each end of the rule between two rows reaches further into it.
+
 ## [0.4.15] - 2026-09-09
 
 ### Fixed
