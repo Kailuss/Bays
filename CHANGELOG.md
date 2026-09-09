@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.19] - 2026-09-09
+
+### Fixed
+
+- A diff variant shows how many lines it adds and removes, measured from its
+  two sides. Working tree and staged diffs always read `+0 -0`.
+- The two numbers of that count take the theme's colours for added and removed
+  lines.
+
 ## [0.4.18] - 2026-09-09
 
 ### Fixed
@@ -347,7 +356,7 @@ channel; even ones are stable releases.
 
 ### Fixed
 
-- Documentation citing `src/webview/contextmenu.js`, `webview.js`, `dragdrop.js`
+- Documentation citing `src/webview/c ontextmenu.js`, `webview.js`, `dragdrop.js`
   and `pathTruncation.js` months after the client became TypeScript.
 - `getStateIndicator` was dynamically imported on the single-bay update path.
 
@@ -358,7 +367,7 @@ channel; even ones are stable releases.
 - Real test suites for id generation, native-tab matching, diff classification
   and path formatting, plus an activation smoke test.
 - Type-aware lint (promise rules) and a CI workflow running type-check, lint,
-  production build and tests.
+  production b uild and tests.
 
 ### Changed
 
