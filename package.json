@@ -62,7 +62,8 @@
         {
           "type": "webview",
           "id": "bays",
-          "name": "%view.bays.name%"
+          "name": "%view.bays.name%",
+          "icon": "$(collection)"
         }
       ]
     },
