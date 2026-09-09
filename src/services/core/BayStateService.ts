@@ -187,25 +187,22 @@ export class BayStateService {
       return;
     }
     
-    // Si es child bay, desregistrar del parent
-    if (bay.metadata.sourceBayId && this.hierarchyService) {
-      this.hierarchyService.detachVariantFromParentBay(id, bay.metadata.sourceBayId);
-    }
-    
-    // Si es parent bay con children, eliminar children primero.
+    // Las variantes se van con su padre, y se PREGUNTA por ellas en vez de leer
+    // una cuenta del padre: la cuenta se quedaba a cero cuando la variante llegó
+    // antes que él, y entonces el cierre lo dejaba solo y el diff seguía en el
+    // estado con un sourceBayId colgando — la fila huérfana bajo la cabecera.
     // EXCEPCIÓN: las variantes de preview NO se eliminan en cascada — cerrar el
     // .md no cierra su preview en VS Code, así que la pestaña nativa sigue viva.
     // Se dejan en el estado y la capa de eventos (BayEventService) dispara un
     // resync que reabre el source y las re-enlaza: una variante nunca queda
     // huérfana de forma permanente.
-    if (bay.state.hasVariant && this.hierarchyService) {
-      const children = this.hierarchyService.fetchVariants(id);
-      for (const child of children) {
+    if (this.hierarchyService) {
+      for (const child of this.hierarchyService.fetchVariants(id)) {
         if (child.metadata.diffType === 'preview') { continue; }
         this.removeBayInternal(child.metadata.id);
       }
     }
-    
+
     this.removeBayInternal(id);
   }
 

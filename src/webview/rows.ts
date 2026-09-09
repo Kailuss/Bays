@@ -161,7 +161,6 @@ function buildVariantRow(variant: VariantView): HTMLDivElement {
   const classes = ['bay', 'variant'];
   if (variant.active) { classes.push('active'); }
   if (variant.diffClass) { classes.push(variant.diffClass); }
-  if (variant.orphan) { classes.push('orphan'); }
 
   const row = el('div', classes.join(' '));
   row.dataset.bayId = variant.id;
@@ -184,9 +183,7 @@ function buildVariantRow(variant: VariantView): HTMLDivElement {
 
   const actions = el('span', 'bay-actions');
   if (variant.canClose) {
-    // Sin parent no hay jerarquía que preservar: cierre normal.
-    const action = variant.orphan ? 'closeBay' : 'closeVariant';
-    actions.appendChild(actionButton(action, variant.id, ICONS.row.closeVariant, t('Close variant')));
+    actions.appendChild(actionButton('closeVariant', variant.id, ICONS.row.closeVariant, t('Close variant')));
   }
   attachActions(row, actions);
 
@@ -207,12 +204,9 @@ export function buildBayBlock(bay: BayView, layout: RowLayout): HTMLDivElement {
   block.dataset.pinned = String(bay.pinned);
   block.dataset.groupid = String(bay.groupId);
 
-  if (bay.variantOnly) {
-    block.dataset.variant = 'true';
-  } else {
-    if (bay.variants.length > 0) { block.classList.add('has-children'); }
-    block.appendChild(buildBayRow(bay, layout));
-  }
+  if (bay.unmovable) { block.dataset.unmovable = 'true'; }
+  if (bay.variants.length > 0) { block.classList.add('has-children'); }
+  block.appendChild(buildBayRow(bay, layout));
 
   for (const variant of bay.variants) {
     block.appendChild(buildVariantRow(variant));

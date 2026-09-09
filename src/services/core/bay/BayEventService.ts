@@ -161,14 +161,9 @@ export class BayEventService {
         }
       }
 
-      // Añadir la bay/variant al estado
+      // Añadir la bay/variant al estado. No hay nada que registrar en el
+      // padre: la relación es el sourceBayId de la variante, y se pregunta.
       this.stateService.addBay(st);
-
-      // Si es variant, registrar en hierarchy (no-op si el parent no existe)
-      if (st.metadata.sourceBayId) {
-        this.hierarchyService.linkVariantToParentBay(st.metadata.id, st.metadata.sourceBayId);
-        Logger.log(`[BayEvent] Variant registered in hierarchy: ${st.metadata.label}`);
-      }
 
       hasChanges = true;
       structuralChange = true;
@@ -190,13 +185,12 @@ export class BayEventService {
 
       const existingBay = this.stateService.getBayById(id);
       if (existingBay) {
-        Logger.log(`[BayEvent] Processing external close: ${existingBay.metadata.label} (ID: ${id}, parentId: ${existingBay.metadata.sourceBayId || 'none'}, hasChildren: ${existingBay.state.hasVariant})`);
+        Logger.log(`[BayEvent] Processing external close: ${existingBay.metadata.label} (ID: ${id}, parentId: ${existingBay.metadata.sourceBayId || 'none'})`);
 
         // REGLA DE JERARQUÍA: si el bay cerrado deja variantes de preview en el
         // estado (removeBay las conserva porque su tab nativa sigue viva),
         // quedarían huérfanas — marcar para resync, que reabre el source.
-        if (existingBay.state.hasVariant &&
-            this.hierarchyService.fetchVariants(id).some(v => v.metadata.diffType === 'preview')) {
+        if (this.hierarchyService.fetchVariants(id).some(v => v.metadata.diffType === 'preview')) {
           orphanedPreviews = true;
         }
 
@@ -321,7 +315,8 @@ export class BayEventService {
 
     // Variants and parents-with-variants need coordinated id + sourceBayId rewiring
     // (and diff URIs the targeted path can't reconstruct) → reconcile from native truth.
-    if (affected.some(a => a.bay.metadata.sourceBayId || a.bay.state.hasVariant)) {
+    if (affected.some(a => a.bay.metadata.sourceBayId ||
+                           this.hierarchyService.fetchVariants(a.bay.metadata.id).length > 0)) {
       Logger.log('[BayEvent] Rename touches a variant/parent — full resync');
       void this.resyncAll();
       return;

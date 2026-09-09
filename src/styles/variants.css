@@ -41,18 +41,6 @@
    an active variant is its NAME, in the theme's active colour
    (`bay-states.css`), which is the mark an active bay carries too. */
 
-/* ORPHAN VARIANTS
-
-   A variant with no parent on screen: its file is closed, or its preview sits in
-   another group. It is still a variant — same row, same icon, same colour — with
-   no indent, because there is no parent above it to hang from.
-
-   And it keeps that indent whichever state it is in, for the same reason as
-   above: the 4px it used to drop to was the room the accent bar took. */
-.bay.variant.orphan {
-  padding-left: 8px;
-}
-
 /* While one of its variants is the focused tab — a diff, a snapshot, the
    rendered preview of a markdown — the parent's NAME keeps the weight of a
    selected row. That is now the whole of what it keeps: it wore a selection

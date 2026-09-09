@@ -120,15 +120,13 @@ export type QuickActionView = {
 /** Una variante (un diff, un snapshot, una preview) bajo su parent. */
 export type VariantView = {
   id      : string;
-  /** Lo que la fila escribe: el tipo de diff, o el label nativo si es huérfana. */
+  /** Lo que la fila escribe: el tipo de diff. */
   label   : string;
   icon    : IconName;
   /** La clase del tipo de diff, para el color de la fila. */
   diffClass?: string;
   tooltip : string;
   active  : boolean;
-  /** Sin parent en la lista: no se indenta y cierra como una bay normal. */
-  orphan  : boolean;
   canClose: boolean;
   /** Lo que la variante cuenta de sí misma (+12-3, "hace 2 h", 3 conflictos). */
   stats?  : { text: string; tooltip: string; conflict?: boolean };
@@ -155,14 +153,10 @@ export type BayView = {
   quickAction?: QuickActionView;
   variants  : VariantView[];
   /**
-   * El bloque NO dibuja fila de parent: lo que se ve es su única variante.
-   *
-   * Es una variante cuyo parent no está en esta lista (el fichero se cerró, o
-   * vive en otro grupo). Sigue SIENDO una variante —misma fila compacta, mismo
-   * icono y color de diff— y por eso no se dibuja como una bay normal: así una
-   * variante recién abierta no aparenta ser un parent.
+   * Una variante dibujada como bay porque su parent no está en esta lista. El
+   * host se niega a moverla sola, así que el cliente no arranca el arrastre.
    */
-  variantOnly?: boolean;
+  unmovable?: boolean;
 };
 
 /** La cabecera de un grupo de editores. */

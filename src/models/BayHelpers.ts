@@ -242,8 +242,6 @@ export class BayHelpers {
     return {
       viewMode: 'source',
       capabilities: BayHelpers.createEmptyCapabilities(),
-      hasVariant: false,
-      variantCount: 0,
       isLoading: false,
       hasError: false,
       errorMessage: undefined,

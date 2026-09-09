@@ -325,6 +325,10 @@ const NOT_OURS = new Set([
 	// RETIRADO a propósito, y la prosa lo NOMBRA a propósito: el argumento de lo
 	// que hay hoy es la forma a la que sustituyó, o la que nunca existió.
 	'PreviewService',
+	// RETIRADOS igual: la cuenta de variantes que un padre llevaba, y que se
+	// quedaba a cero en silencio. La guia la nombra para decir por que la
+	// relacion vive ahora en un solo sitio, el sourceBayId de la variante.
+	'hasVariant', 'variantCount',
 	// De la plataforma, y retirado del cliente: el truncado de rutas colgaba de
 	// uno sobre el `<body>` entero, y lo que la guía explica es por qué el render
 	// dice qué se ha construido en vez de que alguien lo adivine mirando el DOM.

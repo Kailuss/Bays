@@ -261,9 +261,6 @@ export function convertToBay(
 
     capabilities,
 
-    hasVariant    : false,
-    variantCount  : 0,
-
     isLoading      : false,
     hasError       : false,
     errorMessage   : undefined,

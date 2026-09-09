@@ -133,7 +133,6 @@ export class BaySyncService {
    * 
    * Delegación:
    * - BayHeadService.ensureParentExistsForSync(): Asegurar parents para variants
-   * - BayHierarchyService.recalculateAllCounts(): Recalcular counts de children
    */
   private async syncAll(): Promise<void> {
     Logger.log('[BaySync] Starting full syncAll');
@@ -209,9 +208,6 @@ export class BaySyncService {
 
     // Replace entire state with processed bays
     this.stateService.replaceBays(allBays);
-
-    // Recalculate hierarchy after sync complete
-    this.hierarchyService.recalculateAllCounts();
 
     Logger.log(`[BaySync] syncAll complete - ${allBays.length} tabs loaded`);
   }

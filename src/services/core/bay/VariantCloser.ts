@@ -54,13 +54,6 @@ export class VariantCloser {
       return 'settled';
     }
 
-    const hierarchyService = this.stateService.getHierarchyService();
-    if (!hierarchyService) {
-      Logger.warn('[VariantCloser] Hierarchy service not available');
-      await variant.close();
-      return 'settled';
-    }
-
     const variantNativeTab = BayHelpers.findNativeTab(variant.metadata, variant.state);
     if (!variantNativeTab) {
       Logger.warn('[VariantCloser] Variant native tab not found');
@@ -82,7 +75,6 @@ export class VariantCloser {
     try {
       // Our own state first, and by hand: the events that would normally do it
       // are the ones just marked to be ignored.
-      hierarchyService.detachVariantFromParentBay(variant.metadata.id, parent.metadata.id);
       this.stateService.removeBayFromState(variant.metadata.id);
 
       await vscode.window.tabGroups.close(variantNativeTab, true);

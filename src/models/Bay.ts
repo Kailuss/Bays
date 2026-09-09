@@ -135,10 +135,6 @@ export type BayState = {
   //: CAPABILITIES
   capabilities       : BayCapabilities;      // What actions can be performed
 
-  //: HIERARCHY
-  hasVariant         : boolean;              // Has child tabs (diffs, previews)
-  variantCount       : number;               // Number of child tabs (for badge display)
-
   //: UI STATE
   isLoading          : boolean;              // Loading content (large files, remote)
   hasError           : boolean;              // Error loading/syncing

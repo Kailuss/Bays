@@ -14,14 +14,12 @@
    you are in is the NAME, below; what says which file the diff belongs to is
    that the parent's name keeps a selected row's weight (`variants.css`).
 
-   The one row that heads a block without being a bay is an ORPHAN variant — a
-   diff whose file is closed, or whose preview sits in another group — so that
-   one wears the surface itself.
+   No row heads a block without being a bay: a variant whose parent is not in
+   the list is drawn AS a bay (`BaysHtmlBuilder`), so the rule above covers it.
 
    The active bay carried a `border-left-color` too, and it drew nothing: no
    sheet gives `.bay` a border width, so there was no bar there to colour. */
 .bay:not(.variant).active,
-.bay.variant.orphan.active,
 .bay-block:has(> .bay:not(.variant).active) > .bay.variant {
   background: var(--vscode-bay-activeBackground, var(--vscode-editor-background));
 }

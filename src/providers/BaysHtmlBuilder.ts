@@ -18,6 +18,7 @@ import { FileActionRegistry } from '../services/registry/FileActionRegistry';
 import { bayStateCode } from '../utils/stateIndicator';
 import { getDiffTypeDisplay } from '../constants/diffTypes';
 import { relativeAge } from '../utils/relativeAge';
+import { demoteOrphanVariant } from '../services/core/helpers/tabConverter';
 import { ICONS } from '../shared/icons';
 import { IconRenderer, StylesBuilder, IconKeyRegistry, BuildSectionsOptions, WebviewResourceUris, PendingIcon, PendingIconRequest, BuildSectionsResult } from './html';
 import type { BayView, GroupSection, QuickActionView, VariantView } from '../shared/protocol';
@@ -184,8 +185,8 @@ export class BaysHtmlBuilder {
     pendingIcons: PendingIcon[],
   ): BayView[] {
     // Las previews de markdown son bays de verdad (variantes de su .md), así que
-    // aquí no se filtra nada: se dibujan como fila hija, o sueltas cuando su
-    // parent no está en esta lista.
+    // aquí no se filtra nada: se dibujan como fila hija, o como una BAY cuando
+    // su parent no está en esta lista (abajo).
     const parents  = bays.filter(bay => !bay.metadata.sourceBayId);
     const variants = bays.filter(bay => bay.metadata.sourceBayId);
 
@@ -206,13 +207,24 @@ export class BaysHtmlBuilder {
       return this.buildBay(parent, children, locked, showPath, copilotReady, pendingIcons);
     });
 
-    // Variantes huérfanas: su parent no está abierto, o vive en otro grupo.
+    // Una variante cuyo parent no está en esta lista —el fichero se cerró, o la
+    // tab vive en otro grupo— se dibuja como una BAY y nunca como una variante
+    // suelta: una fila de variante sin fila de la que colgar es la forma que
+    // esta lista no puede tener, se la llame como se la llame. Es la misma
+    // degradación que hace el estado cuando un parent no se puede abrir
+    // (`demoteOrphanVariant`), aplicada al pintar para el instante entre que el
+    // parent se va y su variante lo sigue, o para una tab que VS Code abrió en
+    // otro grupo. Lo que pierde es el sangrado y el tipo de diff como rótulo, y
+    // escribe el label nativo, que dice de qué fichero es.
     // Se pregunta a un Set y no a `parents.some`: aquello es un recorrido de los
     // padres por cada variante, y esto corre en cada reporte de git.
     const parentIds = new Set(parents.map(parent => parent.metadata.id));
     for (const child of variants) {
       if (parentIds.has(child.metadata.sourceBayId as string)) { continue; }
-      views.push(this.buildOrphan(child, locked, pendingIcons));
+      const view = this.buildBay(demoteOrphanVariant(child), [], locked, showPath, copilotReady, pendingIcons);
+      // El host se niega a mover una variante sola (`BayDragDropService`), así
+      // que el cliente no arranca el gesto: arrastrada, solo volvería a su sitio.
+      views.push({ ...view, unmovable: true });
     }
 
     return views;
@@ -245,47 +257,21 @@ export class BaysHtmlBuilder {
       quickAction: hover && bay.state.capabilities.canTogglePreview
         ? this.quickActionFor(bay, hasPreviewVariant)
         : undefined,
-      variants  : children.map(child => this.buildVariant(child, locked, false)),
+      variants  : children.map(child => this.buildVariant(child, locked)),
     };
   }
 
-  /**
-   * Una variante suelta: sigue SIENDO una variante (misma fila compacta, mismo
-   * icono y color de diff) y no una bay normal. Dibujada como aquéllas, una
-   * variante recién abierta aparentaba ser un parent. Lo que cambia es que
-   * escribe el label nativo, que incluye el fichero, y que no se indenta: no hay
-   * parent encima del que colgar.
-   */
-  private buildOrphan(bay: Bay, locked: boolean, pendingIcons: PendingIcon[]): BayView {
-    return {
-      id       : bay.metadata.id,
-      label    : bay.metadata.label,
-      tooltip  : bay.metadata.tooltipText || bay.metadata.label,
-      iconKey  : this.iconKeyFor(bay, pendingIcons),
-      active   : bay.state.isActive,
-      pinned   : false,
-      groupId  : bay.state.groupId,
-      canClose : false,
-      canChat  : false,
-      // La fila que se dibuja ES la variante: el contenedor solo la envuelve.
-      variants : [this.buildVariant(bay, locked, true)],
-      variantOnly: true,
-    };
-  }
-
-  private buildVariant(bay: Bay, locked: boolean, orphan: boolean): VariantView {
+  private buildVariant(bay: Bay, locked: boolean): VariantView {
     const diff = getDiffTypeDisplay(bay.metadata.diffType, bay.metadata.label);
 
     return {
       id       : bay.metadata.id,
-      // Bajo su parent basta el tipo ("Working Tree"); suelta, la fila necesita
-      // el label nativo para saber de qué fichero habla.
-      label    : orphan ? bay.metadata.label : (diff?.label ?? 'Diff'),
+      // Bajo su parent basta el tipo ("Working Tree"): el fichero lo dice él.
+      label    : diff?.label ?? 'Diff',
       icon     : (diff?.icon ?? ICONS.variant.generic) as VariantView['icon'],
       diffClass: diff?.cssClass || undefined,
       tooltip  : bay.metadata.tooltipText || bay.metadata.label,
       active   : bay.state.isActive,
-      orphan,
       canClose : this._enableHoverActions && !locked && bay.state.capabilities.canClose,
       stats    : variantStats(bay),
     };

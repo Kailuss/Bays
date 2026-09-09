@@ -7,10 +7,17 @@ import { Logger } from '../../platform/logger';
  * Manages hierarchical parent-child relationships between Bays.
  *
  * Responsibilities:
- * - Register/unregister children under parents
- * - Keep hasVariant and variantCount synchronized
+ * - Answer which bays are a parent's variants
  * - Inherit state from parent to child (only viewMode for Markdown)
- * - Recalculate counters when necessary
+ *
+ * The relation lives in ONE place: the variant's `sourceBayId`. The parent keeps
+ * no count of its variants, on purpose. A count is a second copy of that fact,
+ * maintained by a register call that ran on the variant's open event, and it
+ * silently stayed at zero when the parent was not in state yet at that moment,
+ * with nothing to retry it. Every path that acts on "a bay and its variants"
+ * gated on the count before scanning, so a parent whose count was wrong moved
+ * or closed alone and left a Working Tree diff under the header it had left.
+ * Scanning `sourceBayId` cannot disagree with itself.
  *
  * IMPORTANT:
  * - Markdown children inherit ONLY viewMode from parent
@@ -29,69 +36,6 @@ export class BayHierarchyService {
   // --- MÉTODOS PÚBLICOS DE JERARQUÍA ---
 
   /**
-   * Registers a child bay under its parent.
-   * Updates hasChildren and childrenCount of the parent.
-   *
-   * @param variantBayId Child bay ID
-   * @param sourceBayId Parent bay ID
-   */
-  linkVariantToParentBay(variantBayId: string, sourceBayId: string): void {
-
-    const sourceBay = this.stateService.getBayById(sourceBayId);
-
-    // Si el sourceBay no existe, no podemos registrar variantBay.
-    // Esto puede pasar si el evento de creación del sourceBay aún no se ha procesado.
-    if (!sourceBay) {
-      Logger.log(`[BayHierarchy] Cannot register child: sourceBay not found (${sourceBayId})`);
-      return;
-    }
-
-    // Verificar que el variantBay existe antes de registrarlo en la jerarquía.
-    const bayVariant = this.stateService.getBayById(variantBayId);
-    if (!bayVariant) {
-      Logger.log(`[BayHierarchy] Cannot register variant: variantBay not found (${variantBayId})`);
-      return;
-    }
-
-    // Update sourceBay state
-    sourceBay.state.hasVariant = true;
-    sourceBay.state.variantCount++;
-    // Note: canExpand computed on-demand, not stored in capabilities
-
-    this.stateService.updateBay(sourceBay);
-
-    Logger.log(`[BayHierarchy] Registered child: ${bayVariant.metadata.label} → ${sourceBay.metadata.label} (count: ${sourceBay.state.variantCount})`);
-  }
-
-  /**
-   * Unregisters a variant bay from its source bay.
-   * Updates hasChildren and childrenCount of the source bay.
-   *
-   * @param variantBayId Variant bay ID
-   * @param sourceBayId Source bay ID
-   */
-  detachVariantFromParentBay(_variantBayId: string, sourceBayId: string): void {
-    const sourceBay = this.stateService.getBayById(sourceBayId);
-    if (!sourceBay) {
-      Logger.log(`[BayHierarchy] Cannot unregister variant: sourceBay not found (${sourceBayId})`);
-      return;
-    }
-
-    // Decrement counter
-    sourceBay.state.variantCount = Math.max(0, sourceBay.state.variantCount - 1);
-
-    // Update hasVariant if no more variants
-    if (sourceBay.state.variantCount === 0) {
-      sourceBay.state.hasVariant = false;
-      // Note: canExpand computed on-demand from hasVariant
-    }
-
-    this.stateService.updateBay(sourceBay);
-
-    Logger.log(`[BayHierarchy] Unregistered child from ${sourceBay.metadata.label} (remaining: ${sourceBay.state.variantCount})`);
-  }
-
-  /**
    * Gets all children of a parent bay.
    *
    * @param sourceBayId Parent bay ID
@@ -101,6 +45,7 @@ export class BayHierarchyService {
     const variants: Bay[] = [];
     // Iterated and not `getAllBays().filter(...)`: that copies every bay into an
     // array to walk it once, and this runs on every close, cascaded per variant.
+    // Always scanned, never short-circuited on a stored count: see the header.
     for (const bay of this.stateService.eachBay()) {
       if (bay.metadata.sourceBayId === sourceBayId) { variants.push(bay); }
     }
@@ -119,10 +64,8 @@ export class BayHierarchyService {
    * una del padre antes de que el padre desaparezca del estado.
    */
   async closeBayWithVariants(bay: Bay): Promise<void> {
-    if (bay.state.hasVariant) {
-      for (const variant of this.fetchVariants(bay.metadata.id)) {
-        await variant.close();
-      }
+    for (const variant of this.fetchVariants(bay.metadata.id)) {
+      await variant.close();
     }
     await bay.close();
   }
@@ -157,7 +100,7 @@ export class BayHierarchyService {
    * @param target La columna de destino.
    */
   async moveBayWithVariants(bay: Bay, target: number): Promise<void> {
-    const variants = bay.state.hasVariant ? this.fetchVariants(bay.metadata.id) : [];
+    const variants = this.fetchVariants(bay.metadata.id);
 
     await bay.moveToGroup(target);
 
@@ -165,44 +108,6 @@ export class BayHierarchyService {
     // activa, así que dos solapadas se pisarían el foco la una a la otra.
     for (const variant of variants) {
       await variant.moveToGroup(target);
-    }
-  }
-
-  /**
-   * Recalculates children count for all parents.
-   * Useful after full synchronization or when inconsistencies exist.
-   */
-  recalculateAllCounts(): void {
-    const allBays = this.stateService.getAllBays();
-
-    // Counted in ONE pass instead of re-filtering the whole list per parent: a
-    // scan per parent is quadratic in the open tabs, and it allocates an array
-    // for each of them to read a length off.
-    const counts = new Map<string, number>();
-    for (const bay of allBays) {
-      const sourceId = bay.metadata.sourceBayId;
-      if (sourceId) { counts.set(sourceId, (counts.get(sourceId) ?? 0) + 1); }
-    }
-
-    let updated = 0;
-    for (const parent of allBays) {
-      if (parent.metadata.sourceBayId) { continue; }
-
-      const actualCount = counts.get(parent.metadata.id) ?? 0;
-
-      if (parent.state.variantCount !== actualCount ||
-          parent.state.hasVariant !== (actualCount > 0)) {
-        parent.state.variantCount = actualCount;
-        parent.state.hasVariant = actualCount > 0;
-        // Note: canExpand computed on-demand from hasChildren state
-
-        this.stateService.updateBay(parent);
-        updated++;
-      }
-    }
-
-    if (updated > 0) {
-      Logger.log(`[BayHierarchy] Recalculated counts for ${updated} parents`);
     }
   }
 

@@ -84,12 +84,10 @@ export function initDragDrop(): void {
     // is the same `.bay-block` whichever of its rows was pressed.
     //
     // The two blocks that still refuse are below, and they refuse for what the
-    // HOST would do with them: an orphan variant block and a pinned one.
-
-    // Orphan variant blocks (a diff/preview whose parent file isn't open) render as
-    // a normal .bay-block but the host rejects reordering them, so dragging would
-    // just animate and snap back. Mark them data-variant and refuse to start a drag.
-    if (block.dataset.variant === 'true') { return; }
+    // HOST would do with them: a variant drawn as a bay because its parent is not
+    // in this list — the host rejects moving a variant alone, so the drag would
+    // only animate and snap back — and a pinned one.
+    if (block.dataset.unmovable === 'true') { return; }
 
     if (block.dataset.pinned === 'true') { return; }
 
