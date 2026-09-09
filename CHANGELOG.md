@@ -7,6 +7,38 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.15] - 2026-09-09
+
+### Fixed
+
+- A bay can be moved to ANY group. It could only ever be moved into the first
+  one: the command it was moved with is named after the target group's ordinal,
+  and of those the workbench only registers First and Last. A command that does
+  not exist is refused, so the move was undone and the bay dropped back where it
+  started, in every direction but one.
+- Dragging a bay to another group lands where the POINTER is, so a tall bay with
+  its variants under it no longer has to be dragged half its own height past the
+  target's header.
+- The band that decides which group a bay is dropped into covers the whole
+  group, edge to edge of the list: dragging a shade above the first header no
+  longer reads as a reorder inside the group the bay came from.
+
+### Changed
+
+- While a bay is being dragged nothing in the list answers the pointer: not a
+  row of any group, and not a group header. Only the rows of the group it came
+  from did, so the ones it passed over lit up one by one under it and every
+  header it crossed opened its whole run of buttons.
+- A drop that moves nothing says WHY. The four reasons a move between groups can
+  be turned down all looked the same, which is the block animating back to where
+  it started: a locked group, a pinned bay, a variant on its own, or the move
+  itself failing. The two the user can act on come up as a notice, the rest go to
+  the Bays output channel.
+- Dragging a bay OUT of a locked group says so while the gesture lasts: the
+  block dims and the group it is over is not marked as a destination. The group
+  it came from decides this, so the drag looked like it worked in one direction
+  and was broken in the other.
+
 ## [0.4.14] - 2026-09-09
 
 ### Changed
