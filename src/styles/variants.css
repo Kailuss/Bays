@@ -20,8 +20,10 @@
   /* Text */
   font-size: inherit;
 
-  /* Visual */
-  background: #0003;
+  /* Visual. NO surface of its own: a block wears one and it is the head row's
+     (`bay-states.css`), so a variant is whatever its parent is wearing in every
+     state. A shade of its own was what made a block read as a row with
+     something stuck under it. */
   padding-left: 36px;
   opacity: 1;
 
@@ -31,50 +33,37 @@
   cursor: pointer;
 }
 
-/* La barra activa se COME parte de la sangría, no la sustituye: 4px de borde +
-   32px de padding = los mismos 36px de la fila en reposo, así el icono no se
-   desplaza al seleccionar la variante. */
-.bay.variant.active {
-  background: var(--vscode-list-activeSelectionBackground, #5a5d5e40);
-  border-left: 4px solid var(--vscode-focusBorder, #007acc);
-  padding-left: 32px;
-}
+/* An active variant grows NOTHING: no bar down its left edge and no surface of
+   its own. Both were edges drawn inside a block that draws none, and the bar
+   cost a second piece of arithmetic besides — it ate 4px of the indent so the
+   icon would not step aside, and the rule under the row had to be pulled back by
+   that same 4px to stay on the column every other line is drawn on. What marks
+   an active variant is its NAME, in the theme's active colour
+   (`bay-states.css`), which is the mark an active bay carries too. */
 
-/* The rule under a row is placed against the PADDING edge, and this row's is
-   pushed in by the accent bar: pulled back by its width, the line stays on the
-   column every other one in the list is drawn on. */
-.bay.variant.active::after {
-  left: calc(var(--bays-card-gap) - 4px);
-}
+/* ORPHAN VARIANTS
 
-.bay.variant.active:hover {
-  background: var(--vscode-list-activeSelectionBackground, rgba(90,93,94,0.3));
-}
+   A variant with no parent on screen: its file is closed, or its preview sits in
+   another group. It is still a variant — same row, same icon, same colour — with
+   no indent, because there is no parent above it to hang from.
 
-/* ORPHAN VARIANTS */
-/* Variante sin parent visible (archivo cerrado, o preview abierto en otro grupo).
-   Sigue siendo una variante — misma fila, icono y color — pero sin sangría:
-   no hay parent encima del que colgar. */
+   And it keeps that indent whichever state it is in, for the same reason as
+   above: the 4px it used to drop to was the room the accent bar took. */
 .bay.variant.orphan {
   padding-left: 8px;
 }
 
-.bay.variant.orphan.active {
-  padding-left: 4px;
-}
+/* While one of its variants is the focused tab — a diff, a snapshot, the
+   rendered preview of a markdown — the parent's NAME keeps the weight of a
+   selected row. That is now the whole of what it keeps: it wore a selection
+   surface as well, which lit two rows in two colours for one thing being looked
+   at, and contradicted the rule that a block wears one surface and does not
+   repaint when a variant is activated.
 
-/* Parent keeps an "active" appearance while one of its variants (e.g. the
-   rendered Markdown preview) is the focused tab, so the source file stays
-   visually associated with what the user is looking at. */
-.bay-block:has(> .bay.variant.active) > .bay:not(.variant) {
-  background: var(--vscode-list-inactiveSelectionBackground, #37373d66);
-}
-
-/* And its NAME keeps the weight of a selected row, which is what makes the pair
-   readable once the variant is the one wearing the active colour: the parent
-   stays MARKED and the variant is the one you are in. Without it, selecting a
-   variant left its file's name at the same weight as every other row of the
-   list, so which file the diff belonged to had to be worked out from an indent.
+   The weight is what makes the pair readable: the parent stays MARKED and the
+   variant is the one you are in. Without it, selecting a variant left its file's
+   name at the same weight as every other row of the list, so which file the diff
+   belonged to had to be worked out from an indent.
 
    Only the weight. The colour is left where the cascade leaves it, so a file's
    git state still has the last word on it. */
@@ -157,9 +146,12 @@
   margin-right: 8px;
 }
 
+/* Full strength: the label is dimmed at rest so that it stands behind the file
+   name above it, and the row you are in has nothing to stand behind. Its colour
+   and its weight are the name rule's, in `bay-states.css`, which answers for
+   both kinds of row at once. */
 .bay.variant.active .variant-label {
   opacity: 1;
-  font-weight: 600;
 }
 
 /* Stats */

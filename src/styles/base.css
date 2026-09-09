@@ -29,14 +29,13 @@
 
   /* === The rule between two rows =========================================
 
-     Its colour, how far each end fades out, and how long a dash is where the
-     line is broken. The three live together because three rules read them and
-     each draws with a different property — a background, a mask and a repeating
-     gradient — so written where they are used they would be three places for
-     the same line to drift apart. */
+     Its colour and how far each end fades out.
+
+     There is no dash length any more. A broken rule was what ran between a bay
+     and the first of its variants, and a block carries no rule inside it at
+     all now — see `.bay:not(:last-child)` in `bay-layout.css`. */
   --bays-rule: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
   --bays-rule-fade: 16px;
-  --bays-rule-dash: 3px;
 
   /* A card: loose of the panel's edges, ringed, lying ON the view rather than
      cut into it. Today the group header is the one thing drawn this way. */

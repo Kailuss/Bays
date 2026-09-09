@@ -1,7 +1,32 @@
 /* Bay Interactive States */
-.bay.active {
-  border-left-color: var(--vscode-focusBorder, #007acc);
+
+/* A BLOCK wears ONE surface, and it is the HEAD row's: the bay itself, or the
+   variant in a block that has no bay to head it. A block is one entry — a
+   variant is a diff, a snapshot or a preview OF the row above it — so the
+   variants take whatever their parent is wearing rather than a shade of their
+   own, in every state there is. Written on the rows and not on `.bay-block` so
+   that the drag marks, which paint the block, keep landing where they did.
+
+   And it holds the other way round, which is the half that is easy to miss: a
+   variant being the active tab does NOT repaint the row it hangs from. It used
+   to, with a selection surface of its own, so activating a diff lit up two rows
+   in two different colours for one thing being looked at. What says which row
+   you are in is the NAME, below; what says which file the diff belongs to is
+   that the parent's name keeps a selected row's weight (`variants.css`).
+
+   The one row that heads a block without being a bay is an ORPHAN variant — a
+   diff whose file is closed, or whose preview sits in another group — so that
+   one wears the surface itself.
+
+   The active bay carried a `border-left-color` too, and it drew nothing: no
+   sheet gives `.bay` a border width, so there was no bar there to colour. */
+.bay:not(.variant).active,
+.bay.variant.orphan.active,
+.bay-block:has(> .bay:not(.variant).active) > .bay.variant {
   background: var(--vscode-bay-activeBackground, var(--vscode-editor-background));
+}
+
+.bay.active {
   color: var(--vscode-bay-activeForeground, var(--vscode-foreground));
 }
 
@@ -12,7 +37,14 @@
   color: var(--vscode-tab-inactiveForeground, var(--vscode-descriptionForeground));
 }
 
-.bay.active .bay-name {
+/* And the same answer whichever element holds the name: a bay writes its own in
+   `.bay-name` and a variant writes what the diff IS in `.variant-label`, and
+   both are the name of the row you are in. It is the only mark an active variant
+   carries now — the accent bar it used to grow was a second edge inside a block
+   that no longer draws any — so it cannot be left to say it for one of the two
+   kinds of row and not the other. */
+.bay.active .bay-name,
+.bay.variant.active .variant-label {
   color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
   /* And a step heavier. The colour on its own is what a native tab does, and a
      tab bar is a handful of names in a row; this is a COLUMN of them, where a

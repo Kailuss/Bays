@@ -46,9 +46,10 @@
    two more edges, one at each end, and this one is not enclosing anything. What
    it has to say is where a row ends, which is a thing said in the middle.
 
-   The fade is a MASK and not a gradient background, and that is what keeps the
-   three forms of this rule to one property each: whole is a colour, broken is a
-   repeating gradient, and neither has to restate how its ends run out.
+   The fade is a MASK and not a gradient background, which is what keeps WHAT the
+   line is and HOW IT ENDS to one property each: the line stays a flat colour,
+   and how far it runs out at either end is said once, in a property of its own,
+   instead of being restated inside whatever the line is made of.
 
    `-webkit-mask-image` as well as the unprefixed one: the standard property is
    much newer than the floor `engines.vscode` declares, so without the prefixed
@@ -74,27 +75,19 @@
   pointer-events: none;
 }
 
-/* Between a row and the FIRST of its variants the rule is BROKEN. A whole rule
-   says that what follows is another thing; a broken one, that it is the same
-   thing one step further in, which is what a variant is — a diff, a snapshot or
-   a preview OF the row it hangs from.
+/* Inside a BLOCK there is no rule at all. A bay and its variants are ONE entry —
+   a variant is a diff, a snapshot or a preview OF the row it hangs from — so a
+   line between any two of them is an edge drawn inside a single thing: with four
+   diffs open on a file, four of them. What a variant belongs to is already said
+   by its indent, by the row above them all and by the surface, which is the
+   parent's in every state (`bay-states.css`).
 
-   Only what the line is MADE OF changes: it keeps its colour, its inset, its
-   column and the mask that runs its ends out. */
-.bay:not(.variant):has(+ .bay.variant)::after {
-  background: repeating-linear-gradient(
-    to right,
-    var(--bays-rule) 0 var(--bays-rule-dash),
-    transparent var(--bays-rule-dash) calc(var(--bays-rule-dash) * 2)
-  );
-}
-
-/* And between two variants there is NO rule. What a variant belongs to is
-   already said by its indent, by its own surface and by the row above them all,
-   so a line between each pair is an edge drawn inside what reads as one entry:
-   with four diffs open on a file, four of them. The LAST variant keeps its
-   rule, because that one is not inside the block but under it. */
-.bay.variant:has(+ .bay.variant)::after {
+   It was two rules and two shapes — broken between the row and its first
+   variant, absent between two variants — which is the same distinction drawn
+   half-way: a dashed line still says that the two sides are different things.
+   One selector says it once, and the LAST row of a block keeps its rule, because
+   that one is not inside the block but under it. */
+.bay:not(:last-child)::after {
   display: none;
 }
 
