@@ -61,14 +61,24 @@
    anything hung below it would simply not be drawn on those rows.
 
    `pointer-events: none` because a row is pressed anywhere along it, and this
-   lies over its last pixel. */
+   lies over its last pixel.
+
+   ONE DEVICE PIXEL tall, never one CSS pixel. A laid-out box snaps its two edges
+   to device pixels independently, and the rows do not sit on whole ones: the
+   card gap, the header's accent and the row heights are all fractional once
+   the display scales by 125 %, so a `1px` rule spans 1.25 device pixels and
+   rounds to ONE row under some rows and TWO under others. The line came out
+   twice as thick under a variant as under the bay above it, on the same
+   screen, for no reason anyone could point at. Divided by the ratio the box is
+   exactly one device pixel tall, and a one-pixel box snaps to one pixel wherever
+   its top lands. `main.ts` writes the ratio and keeps it current across a zoom. */
 .bay::after {
   content: '';
   position: absolute;
   left: var(--bays-card-gap);
   right: var(--bays-card-gap);
   bottom: 0;
-  height: 1px;
+  height: calc(1px / var(--bays-dpr, 1));
   background: var(--bays-rule);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--bays-rule-fade), #000 calc(100% - var(--bays-rule-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, #000 var(--bays-rule-fade), #000 calc(100% - var(--bays-rule-fade)), transparent);

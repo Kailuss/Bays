@@ -16,6 +16,15 @@ import { initScrollbar } from './scrollbar';
 // NUEVA, y todo lo que va detrás registra su listener dentro de esta misma.
 vscode.postMessage({ type: 'ready' } satisfies ReadyMessage);
 
+// The device pixel ratio, for the one rule that has to be exactly one device
+// pixel tall (`bay-layout.css`). Re-read on `resize`, which is what a zoom
+// change fires: a ratio written once would leave the rule at the old scale.
+const writeDpr = (): void => {
+  document.documentElement.style.setProperty('--bays-dpr', String(window.devicePixelRatio || 1));
+};
+writeDpr();
+window.addEventListener('resize', writeDpr);
+
 initInteractions();
 initPathTruncation();
 initTooltips();
