@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { BayStateService } from './BayStateService';
 import { GitSyncService } from '../integration/GitSyncService';
 import { BayHierarchyService } from './BayHierarchyService';
+import { DiffStatsService } from './DiffStatsService';
 import { BayEventService } from './bay/BayEventService';
 import { BayHeadService } from './bay/BayHeadService';
 import { ActiveStateService } from './bay/ActiveStateService';
@@ -32,6 +33,7 @@ import { Logger } from '../../platform/logger';
 export class BaySyncService {
   private gitSyncService: GitSyncService;
   private hierarchyService: BayHierarchyService;
+  private diffStatsService: DiffStatsService;
 
   // Specialized services (post-refactoring)
   private bayEventService: BayEventService;
@@ -46,6 +48,7 @@ export class BaySyncService {
   constructor(private stateService: BayStateService) {
     this.gitSyncService = new GitSyncService(this.stateService);
     this.hierarchyService = new BayHierarchyService(this.stateService);
+    this.diffStatsService = new DiffStatsService(this.stateService);
 
     // Initialize specialized services
     this.bayHeadService = new BayHeadService(
@@ -314,6 +317,7 @@ export class BaySyncService {
       this.diagnosticsFlushTimer = null;
     }
     this.bayEventService.dispose();
+    this.diffStatsService.dispose();
     this.gitSyncService.dispose();
   }
 }

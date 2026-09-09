@@ -160,8 +160,8 @@ export class BayHierarchyService {
   /**
    * Calculates diff statistics for a child bay based on its type.
    *
-   * For working-tree/staged/edit: placeholder or label-derived stats.
-   * For snapshots and commits: timestamp information.
+   * For edits: the count in the label. For snapshots and commits: timestamp
+   * information. Working tree and staged diffs are measured (`DiffStatsService`).
    *
    * @param childBay Child bay to calculate stats
    */
@@ -183,26 +183,20 @@ export class BayHierarchyService {
    * @param diffType Diff type
    */
   private calculateLocalDiffStats(childBay: Bay, diffType: string): void {
-    // For working-tree, staged and edits, set placeholder stats
-    // In real implementation, you would parse diff content
-    if (diffType === 'working-tree' || diffType === 'staged' || diffType === 'edit') {
-      // For Copilot edits, try extracting stats from label
-      if (diffType === 'edit') {
-        const statsMatch = childBay.metadata.label.match(/[+](\d+)[-](\d+)/);
-        if (statsMatch) {
-          childBay.state.diffStats = {
-            linesAdded: parseInt(statsMatch[1], 10),
-            linesRemoved: parseInt(statsMatch[2], 10),
-          };
-          return;
-        }
+    // A Copilot edit carries its count in the label. Every other diff is
+    // MEASURED from its two documents by `DiffStatsService`, and until that
+    // lands the row writes nothing: a `+0 -0` placeholder here read as a
+    // measured answer, and it was never replaced.
+    if (diffType === 'edit') {
+      const statsMatch = childBay.metadata.label.match(/[+](\d+)[-](\d+)/);
+      if (statsMatch) {
+        childBay.state.diffStats = {
+          linesAdded: parseInt(statsMatch[1], 10),
+          linesRemoved: parseInt(statsMatch[2], 10),
+        };
       }
-      // TODO: Implement real diff parsing when VS Code API supports it
-      // For now, show placeholder stats
-      childBay.state.diffStats = {
-        linesAdded: 0,
-        linesRemoved: 0,
-      };
+    } else if (diffType === 'working-tree' || diffType === 'staged') {
+      return;
     } else if (diffType === 'snapshot' || diffType === 'commit') {
       // For snapshots and commits, use current time as placeholder
       childBay.state.diffStats = {
