@@ -60,8 +60,24 @@
   --bays-git-untracked: var(--vscode-gitDecoration-untrackedResourceForeground, #73c991);
   --bays-git-ignored:   var(--vscode-gitDecoration-ignoredResourceForeground, #8c8c8c);
   --bays-git-conflict:  var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
-  --bays-warning:       var(--vscode-editorWarning-foreground, #cca700);
-  --bays-error:         var(--vscode-editorError-foreground, #f48771);
+  /* The last two answer with what a native TAB writes an error and a warning
+     in, which is NOT the colour of the squiggle under the text. The workbench
+     decorates a tab, and an explorer entry, from the marker service with
+     `list.errorForeground` and `list.warningForeground`; `editorError` and
+     `editorWarning` are the underline's own pair. In a dark theme that is
+     `#F88070` against `#F14C4C`, a salmon against the squiggle red, and in the
+     light ones the warning parts company as well. This list is the tab bar said
+     another way, so it says it in the tab's colour.
+
+     The editor's pair stays on as the SECOND link, and not as a nicety: `list.*`
+     is deliberately undefined in the high contrast themes, where the workbench
+     leaves a tab with errors uncoloured. A row that reports nothing is the wrong
+     answer for a list whose job is to report, so there it answers with the error
+     colour that theme did define — where a literal of ours would be a dark
+     theme's salmon on a white ground, which is the one thing an HC theme exists
+     to rule out. */
+  --bays-warning:       var(--vscode-list-warningForeground, var(--vscode-editorWarning-foreground, #cca700));
+  --bays-error:         var(--vscode-list-errorForeground, var(--vscode-editorError-foreground, #f88070));
 
   /* A card: loose of the panel's edges, ringed, lying ON the view rather than
      cut into it. Today the group header is the one thing drawn this way. */
