@@ -29,15 +29,21 @@
   line-height: 1;
 }
 
-.bay-state.state-modified  {color: var(--vscode-gitDecoration-modifiedResourceForeground   ,#e2c08d); }
-.bay-state.state-added     {color: var(--vscode-gitDecoration-addedResourceForeground      ,#73c991); }
-.bay-state.state-deleted   {color: var(--vscode-gitDecoration-deletedResourceForeground    ,#c74e39); }
-.bay-state.state-untracked {color: var(--vscode-gitDecoration-untrackedResourceForeground  ,#73c991); }
-.bay-state.state-ignored   {color: var(--vscode-gitDecoration-ignoredResourceForeground    ,#8c8c8c); }
-.bay-state.state-conflict  {color: var(--vscode-gitDecoration-conflictingResourceForeground,#e51400); }
-.bay-state.state-warning   {color: var(--vscode-editorWarning-foreground                   ,#cca700); }
-.bay-state.state-error     {color: var(--vscode-editorError-foreground                     ,#f48771); }
-.bay-state.state-dirty     {color: var(--vscode-gitDecoration-modifiedResourceForeground   ,#e2c08d); }
+/* The tones come from the view's one table (`base.css`), which is what keeps
+   this mark and the name beside it the same colour for the same fact. The table
+   was written out here as well, and in two other sheets, and it had already
+   drifted. */
+.bay-state.state-modified  {color: var(--bays-git-modified);  }
+.bay-state.state-added     {color: var(--bays-git-added);     }
+.bay-state.state-deleted   {color: var(--bays-git-deleted);   }
+.bay-state.state-untracked {color: var(--bays-git-untracked); }
+.bay-state.state-ignored   {color: var(--bays-git-ignored);   }
+.bay-state.state-conflict  {color: var(--bays-git-conflict);  }
+.bay-state.state-warning   {color: var(--bays-warning);       }
+.bay-state.state-error     {color: var(--bays-error);         }
+/* An unsaved file is written in the colour of a modified one, because that is
+   what it is: a change that git has not been told about yet. */
+.bay-state.state-dirty     {color: var(--bays-git-modified);  }
 
 /* A clean row carries the slot in the markup and nothing in it, so it is taken
    out of the flow entirely: `display: none` and not `visibility`, or an empty

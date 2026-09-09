@@ -1,4 +1,9 @@
-/* File State Colors */
+/* File State Colors
+
+   The tones come from the view's one table (`base.css`). Each of them already
+   read a theme token here — the extension hardcodes no state colour — but the
+   fallback behind each one was written out in this sheet and in two others, and
+   the three had drifted apart. */
 
 .bay-name.changing {
   transition: color 1000ms ease-in-out;
@@ -6,40 +11,40 @@
 
 .bay .bay-name.modified,
 .bay.active .bay-name.modified {
-  color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  color: var(--bays-git-modified);
 }
 
 .bay .bay-name.added,
 .bay.active .bay-name.added {
-  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+  color: var(--bays-git-added);
 }
 
 .bay .bay-name.deleted,
 .bay.active .bay-name.deleted {
-  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  color: var(--bays-git-deleted);
 }
 
 .bay .bay-name.untracked,
 .bay.active .bay-name.untracked {
-  color: var(--vscode-gitDecoration-untrackedResourceForeground, #73c991);
+  color: var(--bays-git-untracked);
 }
 
 .bay .bay-name.ignored,
 .bay.active .bay-name.ignored {
-  color: var(--vscode-gitDecoration-ignoredResourceForeground, #8c8c8c);
+  color: var(--bays-git-ignored);
 }
 
 .bay .bay-name.conflict,
 .bay.active .bay-name.conflict {
-  color: var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
+  color: var(--bays-git-conflict);
 }
 
 .bay .bay-name.warning,
 .bay.active .bay-name.warning {
-  color: var(--vscode-editorWarning-foreground, #cca700);
+  color: var(--bays-warning);
 }
 
 .bay .bay-name.error,
 .bay.active .bay-name.error {
-  color: var(--vscode-editorError-foreground, #f48771);
+  color: var(--bays-error);
 }

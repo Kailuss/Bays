@@ -37,6 +37,29 @@
   --bays-rule: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
   --bays-rule-fade: 16px;
 
+  /* === The colours a row writes its state in =============================
+
+     One table, and it is the FALLBACKS that make it worth naming: every one of
+     these already reads a theme token — the extension hardcodes no state colour
+     — but the fallback behind it is what a `var()` needs in order to paint at
+     all where the theme says nothing. That table was written out in three
+     sheets (`bay-actions.css`, `bay-file-states.css`, `variants.css`) and it
+     had already drifted: a warning was `#cca700` in two of them and `#ffcc00`
+     and `#eca700` in the third, so the same fact came out in three colours
+     depending on which mark said it.
+
+     Named here are the eight that MORE THAN ONE sheet reads. What one place
+     draws stays where it is drawn: a property for a value used once is
+     indirection with nothing to keep in step. */
+  --bays-git-modified:  var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  --bays-git-added:     var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+  --bays-git-deleted:   var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  --bays-git-untracked: var(--vscode-gitDecoration-untrackedResourceForeground, #73c991);
+  --bays-git-ignored:   var(--vscode-gitDecoration-ignoredResourceForeground, #8c8c8c);
+  --bays-git-conflict:  var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
+  --bays-warning:       var(--vscode-editorWarning-foreground, #cca700);
+  --bays-error:         var(--vscode-editorError-foreground, #f48771);
+
   /* A card: loose of the panel's edges, ringed, lying ON the view rather than
      cut into it. Today the group header is the one thing drawn this way. */
   /* The strip a group is headed by. Atria's path bar to the pixel: the height it

@@ -82,15 +82,21 @@
   height: 12px;
 }
 
-/* DIFF TYPE COLORS */
+/* DIFF TYPE COLORS
+
+   The ones that name a GIT state read the view's table (`base.css`), which is
+   what keeps a modified diff and a modified file the same colour. The rest name
+   a kind of diff and nothing else, and each is drawn in exactly one place, so
+   they say what they are here. */
+
 /* Working Tree */
 .bay.variant.diff-working-tree .bay-icon .codicon {
-  color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  color: var(--bays-git-modified);
 }
 
 /* Staged */
 .bay.variant.diff-staged .bay-icon .codicon {
-  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+  color: var(--bays-git-added);
 }
 
 /* Snapshot */
@@ -105,12 +111,12 @@
 
 /* Edit (AI) */
 .bay.variant.diff-edit .bay-icon .codicon {
-  color: var(--vscode-editorWarning-foreground, #ffcc00);
+  color: var(--bays-warning);
 }
 
 /* Merge Conflict */
 .bay.variant.diff-conflict .bay-icon .codicon {
-  color: var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
+  color: var(--bays-git-conflict);
 }
 
 /* Incoming */
@@ -125,12 +131,15 @@
 
 /* Incoming-Current */
 .bay.variant.diff-merge .bay-icon .codicon {
-  color: var(--vscode-editorWarning-foreground, #eca700);
+  color: var(--bays-warning);
 }
 
-/* Unknown */
+/* Unknown. Its fallback is the theme's own chart orange, where it read
+   `#cccccc80` — a translucent grey, which is not a colour the token behind it
+   could ever resolve to. A theme naming no chart colours drew this mark in a
+   shade nobody chose. */
 .bay.variant.diff-compare .bay-icon .codicon {
-  color: var(--vscode-charts-orange, #cccccc80);
+  color: var(--vscode-charts-orange, #d18616);
 }
 
 /* LABELS & STATS */
@@ -168,15 +177,15 @@
 }
 
 .stats-added {
-  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+  color: var(--bays-git-added);
 }
 
 .stats-removed {
-  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  color: var(--bays-git-deleted);
 }
 
 .variant-stats.conflict {
-  color: var(--vscode-gitDecoration-conflictingResourceForeground, #e51400);
+  color: var(--bays-git-conflict);
 }
 
 /* ACTION BUTTONS
