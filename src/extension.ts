@@ -23,7 +23,7 @@ import { TIMINGS }                from './constants/timings';
 
 export async function activate(context: vscode.ExtensionContext) {
   Logger.initialize();
-  Logger.log('Activating Bays…');
+  Logger.log('Activating Editor Bays…');
 
   try {
     // Mapa nombre-de-archivo → languageId a partir de `contributes.languages`.
@@ -215,7 +215,7 @@ export async function activate(context: vscode.ExtensionContext) {
       productIcons.onDidChange(() => void provider.sendProductIcons()),
     );
 
-    Logger.log('Bays activated successfully');
+    Logger.log('Editor Bays activated successfully');
   } catch (error) {
     Logger.error('Activation failed', error);
     throw error;

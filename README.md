@@ -2,7 +2,7 @@
 
 The tab bar works until it doesn't. Open a dozen files and the tabs shrink, then scroll, then start hiding the one you want behind a chevron.
 
-**Bays puts your open editors in a vertical list in the sidebar**, where a name stays readable however many of them there are.
+**Editor Bays puts your open editors in a vertical list in the sidebar**, where a name stays readable however many of them there are.
 
 ## A list you can actually read
 
@@ -34,7 +34,7 @@ Right-click gives you a context menu built to VS Code's own shape: it opens unde
 
 ## Groups, when you split
 
-Split the editor and Bays gathers each group under a heading of its own.
+Split the editor and the view gathers each group under a heading of its own.
 
 - **Rename** a group to what it actually is.
 - **Colour** it blue, green, yellow, orange, red or purple, all from your theme.
@@ -73,15 +73,15 @@ The toolbar carries a **View Options** menu for the two you flip most, and a **S
 
 ## A few things worth knowing
 
-Bays has a few deliberate boundaries:
+Editor Bays has a few deliberate boundaries:
 
 - **Cursor position sync is experimental**, and off until you ask for it.
 - A webview cannot cross the application boundary: nothing can be dragged in from outside VS Code.
-- Bays shows what the editor has open. It is not a file browser.
+- The view shows what the editor has open. It is not a file browser.
 
 ## Getting started
 
-Click the **Bays** icon in the Activity Bar.
+Click the **Editors** icon in the Activity Bar.
 
 Your open editors are already in it. There is nothing to configure.
 
@@ -89,7 +89,7 @@ Settings use the `bays.` prefix: filter for `@ext:Lovervoid.bays`.
 
 Requires VS Code **1.85** or later.
 
-## Why Bays?
+## Why Editor Bays?
 
 Because the tab bar runs out of room and the sidebar does not.
 

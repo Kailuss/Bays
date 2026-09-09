@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 /**
- * The central logger, writing to the "Bays" output channel.
+ * The central logger, writing to the "Editors" output channel.
  *
  * `log` is GATED behind `bays.trace`, off by default, and that gate is not
  * hygiene. There are over a hundred call sites and several of them sit inside
@@ -21,7 +21,7 @@ export class Logger {
 
   /** Creates the output channel. Call once from `activate()`. */
   static initialize(): void {
-    this.outputChannel = vscode.window.createOutputChannel('Bays');
+    this.outputChannel = vscode.window.createOutputChannel('Editors');
     this.readTrace();
     this.configListener?.dispose();
     this.configListener = vscode.workspace.onDidChangeConfiguration(e => {

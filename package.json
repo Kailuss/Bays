@@ -1,8 +1,8 @@
 {
   "name": "bays",
-  "displayName": "Bays",
+  "displayName": "Editor Bays",
   "description": "%description%",
-  "version": "0.4.20",
+  "version": "0.4.21",
   "publisher": "Lovervoid",
   "license": "MIT",
   "icon": "icon.png",
@@ -72,178 +72,178 @@
         "command": "bays.refresh",
         "title": "%command.refresh%",
         "icon": "$(refresh)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.openBay",
         "title": "%command.openBay%",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.closeBay",
         "title": "%command.closeBay%",
         "icon": "$(close)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.closeOthers",
         "title": "%command.closeOthers%",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.closeToRight",
         "title": "%command.closeToRight%",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.closeAll",
         "title": "%command.closeAll%",
         "icon": "$(close-all)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.pinBay",
         "title": "%command.pinBay%",
         "icon": "$(pinned)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.unpinBay",
         "title": "%command.unpinBay%",
         "icon": "$(pin)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.revealInExplorer",
         "title": "%command.revealInExplorer%",
         "icon": "$(go-to-file)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.copyRelativePath",
         "title": "%command.copyRelativePath%",
         "icon": "$(clippy)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.copyFileContents",
         "title": "%command.copyFileContents%",
         "icon": "$(copy)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.compareWithActive",
         "title": "%command.compareWithActive%",
         "icon": "$(diff)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.moveToGroup",
         "title": "%command.moveToGroup%",
         "icon": "$(split-horizontal)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.addToCopilotChat",
         "title": "%command.addToCopilotChat%",
         "icon": "$(add)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.addMultipleToCopilotChat",
         "title": "%command.addMultipleToCopilotChat%",
         "icon": "$(sparkle)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.closeGroup",
         "title": "%command.closeGroup%",
         "icon": "$(close-all)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.copyPath",
         "title": "%command.copyPath%",
         "icon": "$(copy)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.openTimeline",
         "title": "%command.openTimeline%",
         "icon": "$(history)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.splitRight",
         "title": "%command.splitRight%",
         "icon": "$(split-horizontal)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.openChanges",
         "title": "%command.openChanges%",
         "icon": "$(git-compare)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.revealInFileExplorer",
         "title": "%command.revealInFileExplorer%",
         "icon": "$(folder-opened)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.moveToNewWindow",
         "title": "%command.moveToNewWindow%",
         "icon": "$(multiple-windows)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.duplicateFile",
         "title": "%command.duplicateFile%",
         "icon": "$(files)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.saveAll",
         "title": "%command.saveAll%",
         "icon": "$(save-all)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.reorder",
         "title": "%command.reorder%",
         "icon": "$(list-ordered)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.toggleCompactMode",
         "title": "%command.toggleCompactMode%",
         "icon": "$(collapse-all)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.toggleShowPath",
         "title": "%command.toggleShowPath%",
         "icon": "$(list-selection)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.renameGroup",
         "title": "%command.renameGroup%",
         "icon": "$(edit)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.setGroupColor",
         "title": "%command.setGroupColor%",
         "icon": "$(symbol-color)",
-        "category": "Bays"
+        "category": "Editors"
       },
       {
         "command": "bays.toggleGroupLock",
         "title": "%command.toggleGroupLock%",
         "icon": "$(lock)",
-        "category": "Bays"
+        "category": "Editors"
       }
     ],
     "submenus": [

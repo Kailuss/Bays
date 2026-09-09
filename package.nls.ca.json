@@ -30,9 +30,9 @@
   "command.renameGroup": "Canvia el nom del grup…",
   "command.setGroupColor": "Tria el color del grup…",
   "command.toggleGroupLock": "Commuta el bloqueig del grup",
-  "view.bays.name": "Bays",
-  "container.baysContainer": "Bays",
-  "config.title": "Bays",
+  "view.bays.name": "Editors",
+  "container.baysContainer": "Editors",
+  "config.title": "Editors",
   "config.showFilePath": "Escriu el camí relatiu del fitxer al costat del nom de cada dàrsena.",
   "config.compactMode": "Mode compacte: el nom i el camí van en una sola línia, amb la fila més baixa (28 px).",
   "config.enableHoverActions": "Mostra els botons d'acció (fitxer, Copilot, tanca) en passar el punter per una dàrsena.",
@@ -40,7 +40,7 @@
   "config.syncCursorPosition": "Sincronitza la posició del cursor (línia i columna) entre una dàrsena i les seves variants (diferències, instantànies…). Activat, moure el cursor en una les mou totes.",
   "config.animations": "L'interruptor mestre de tot el que la vista mou: l'animació de tancament, el pols en canviar d'estat i el fos dels tooltips. També l'apaga `workbench.reduceMotion`.",
   "config.followProductIconTheme": "Dibuixa els glifs del tauler amb el paquet d'icones de producte triat a `workbench.productIconTheme`, com la resta de l'entorn. Apagat, el tauler es queda amb els codicons que porta l'extensió i no es llegeix res del disc.",
-  "config.trace": "Escriu al canal de sortida Bays una traça detallada del que l'extensió està fent. Apagat per defecte: aquestes línies són per depurar, i escriure-les costa una marca de temps i un viatge al canal en camins que corren un cop per pestanya. Els avisos i els errors s'escriuen igualment.",
-  "capabilities.untrustedWorkspaces": "Bays només llegeix la llista d'editors oberts i el seu estat de git i de diagnòstics. Mai no executa codi de l'espai de treball.",
-  "capabilities.virtualWorkspaces": "Bays funciona en un espai de treball virtual. Les accions que necessiten un fitxer al disc, i l'estat del git, no hi són disponibles."
+  "config.trace": "Escriu al canal de sortida Editors una traça detallada del que l'extensió està fent. Apagat per defecte: aquestes línies són per depurar, i escriure-les costa una marca de temps i un viatge al canal en camins que corren un cop per pestanya. Els avisos i els errors s'escriuen igualment.",
+  "capabilities.untrustedWorkspaces": "L'extensió només llegeix la llista d'editors oberts i el seu estat de git i de diagnòstics. Mai no executa codi de l'espai de treball.",
+  "capabilities.virtualWorkspaces": "L'extensió funciona en un espai de treball virtual. Les accions que necessiten un fitxer al disc, i l'estat del git, no hi són disponibles."
 }

@@ -1,11 +1,20 @@
 # Changelog
 
-All notable changes to Bays.
+All notable changes to Editor Bays.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
+
+## [0.4.21] - 2026-09-09
+
+### Changed
+
+- The extension is called Editor Bays on the marketplace and Editors inside
+  VS Code: the Activity Bar icon, the view, the settings section, the command
+  category and the output channel. The extension id, the `bays.` prefix and
+  everything saved stay as they were.
 
 ## [0.4.20] - 2026-09-09
 
