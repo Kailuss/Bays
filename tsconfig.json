@@ -5,6 +5,10 @@
 		"lib": [
 			"ES2022"
 		],
+		// Named so the editor and tsc agree: left implicit, the TS server has been
+		// seen dropping `@types/node` for a file and flagging every `setTimeout`.
+		// `mocha` is for src/test-integration, whose tsconfig extends this one.
+		"types": ["node", "mocha"],
 		"sourceMap": true,
 		"rootDir": "src",
 		"strict": true,   /* enable all strict type-checking options */
