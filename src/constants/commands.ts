@@ -8,6 +8,12 @@ export const VSCODE_COMMANDS = {
   CLOSE_ALL_EDITORS: 'workbench.action.closeAllEditors',
   OPEN_EDITOR_AT_INDEX: 'workbench.action.openEditorAtIndex',
   /**
+   * The layout of the editor part in the window that has OS FOCUS. Read before
+   * `openEditorAtIndex`, which acts on that same window: see
+   * `BayHelpers.activateByNativeTab`.
+   */
+  GET_EDITOR_LAYOUT: 'vscode.getEditorLayout',
+  /**
    * Mover el editor activo, y el ÚNICO comando que acepta a QUÉ grupo.
    *
    * Sin el prefijo `workbench.action.` a propósito: ése es su id de verdad. Las

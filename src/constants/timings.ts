@@ -14,6 +14,12 @@ export const TIMINGS = {
   // Retry delays (ms)
   ACTIVATION_RETRY_DELAY: 50,
   ACTIVATION_MAX_RETRIES: 3,
+  // Focusing a group in another window brings that window forward, but the OS
+  // focus lands asynchronously: a webview pane defers its focus by 50 ms and
+  // the window switch is a round trip through the main process on top. The
+  // poll asks the workbench which window it is looking at until it changes.
+  WINDOW_FOCUS_POLL: 25,
+  WINDOW_FOCUS_TIMEOUT: 250,
 
   // Sync delays (ms)
   SYNC_PROPAGATION_DELAY: 5, // Tiempo para que VS Code propague el estado de bays

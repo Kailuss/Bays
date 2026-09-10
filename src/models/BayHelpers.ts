@@ -3,6 +3,8 @@ import * as path from 'path';
 import { Logger } from '../platform/logger';
 import { tabInstanceToken } from '../platform/tabIdentity';
 import { VSCODE_COMMANDS } from '../constants/commands';
+import { TIMINGS } from '../constants/timings';
+import { countLayoutGroups } from '../utils/editorLayout';
 import type { BayMetadata, BayState, BayCapabilities, BayViewMode as BayViewMode, BayType } from './Bay';
 
 //· --- CONSTANTES ---
@@ -99,15 +101,41 @@ export class BayHelpers {
       value: viewColumn,
     });
   }
+  /**
+   * Activates a tab that has no uri to open it by: focus its group, then open
+   * the editor at its index.
+   *
+   * **`openEditorAtIndex` acts on the window that has OS FOCUS**, not on the
+   * group just focused. The workbench resolves its active group through the
+   * document that has focus, so with the group in a floating window the index
+   * lands in the MAIN window's group instead: clicking the second Claude chat
+   * of a floating group opened whatever sat second in the main window, and
+   * lit its row. Focusing the group does ask for its window, but a webview
+   * pane defers that by 50 ms and the switch is a round trip through the main
+   * process, so the next command reliably won the race.
+   *
+   * Two things close it. When the tab is already the active one of its group,
+   * focusing the group IS the activation and the index is never asked for.
+   * Otherwise `getEditorLayout`, which answers for that same focused window,
+   * is polled until it describes a different window; the number of groups it
+   * lists against the Tab API's count says whether there is another window at
+   * all, so a single window pays nothing.
+   */
   static async activateByNativeTab(metadata: BayMetadata, state: BayState): Promise<void> {
     const nativeTab = BayHelpers.findNativeTab(metadata, state);
     if (nativeTab) {
       const tabIndex = nativeTab.group.tabs.indexOf(nativeTab);
       if (tabIndex !== -1) {
         try {
-          Logger.log(`[BayHelper] Activating by index: ${metadata.label}, index: ${tabIndex}, isPreview: ${nativeTab.isPreview}`);
+          Logger.log(`[BayHelper] Activating by index: ${metadata.label}, column: ${state.viewColumn}, index: ${tabIndex}, isPreview: ${nativeTab.isPreview}`);
+          const before = await BayHelpers.focusedWindowLayout();
           await BayHelpers.focusGroup(state.viewColumn);
+          if (nativeTab.isActive) { return; }
+          await BayHelpers.awaitWindowSwitch(before);
           await vscode.commands.executeCommand(VSCODE_COMMANDS.OPEN_EDITOR_AT_INDEX, tabIndex);
+          if (!nativeTab.isActive) {
+            Logger.warn(`[BayHelper] Index activation did not land: ${metadata.label} (column ${state.viewColumn}, index ${tabIndex})`);
+          }
           return;
         } catch (err) {
           Logger.error('[BayHelper] Failed to activate by index: ' + metadata.label, err);
@@ -123,6 +151,32 @@ export class BayHelpers {
         try { await vscode.commands.executeCommand(cmd); return; } catch {}
       }
     }
+  }
+
+  /** The layout of the window that has OS focus, serialized so two reads compare. */
+  private static async focusedWindowLayout(): Promise<{ groups: number; key: string }> {
+    const layout: unknown = await vscode.commands.executeCommand(VSCODE_COMMANDS.GET_EDITOR_LAYOUT);
+    return { groups: countLayoutGroups(layout), key: JSON.stringify(layout) };
+  }
+
+  /**
+   * Waits for the OS focus to reach the window of the group just focused.
+   *
+   * There is nothing to wait for with a single window: the layout then lists
+   * every group the Tab API knows, and `openEditorAtIndex` cannot miss. With
+   * more, the layout is re-read until it describes another window, and a group
+   * that lived in the focused window all along runs out the timeout, which is
+   * the price of not being able to ask which window a group is in.
+   */
+  private static async awaitWindowSwitch(before: { groups: number; key: string }): Promise<void> {
+    if (before.groups >= vscode.window.tabGroups.all.length) { return; }
+    const deadline = Date.now() + TIMINGS.WINDOW_FOCUS_TIMEOUT;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, TIMINGS.WINDOW_FOCUS_POLL));
+      const now = await BayHelpers.focusedWindowLayout();
+      if (now.key !== before.key) { return; }
+    }
+    Logger.log('[BayHelper] Window focus did not move within the timeout');
   }
 
   /**  */

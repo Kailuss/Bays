@@ -144,6 +144,10 @@ export class BaySyncService {
     // map, which also PRUNES stale groups (closed splits, renumbered columns) —
     // the old addGroup-only loop left ghost groups behind forever.
     this.stateService.setGroups(vscode.window.tabGroups.all.map(createTabGroup));
+    // One line per group, so a log can say which column each tab lives in. A
+    // group in a floating window is numbered after the main window ones, and
+    // that number is what every activation by index trusts.
+    Logger.log(`[BaySync] Groups: ${vscode.window.tabGroups.all.map(g => `col ${g.viewColumn}${g.isActive ? "*" : ""} (${g.tabs.length} tabs)`).join(", ")}`);
 
     const allBays: Bay[] = [];
     const variants: Array<{ bay: Bay; nativeTab: vscode.Tab }> = [];
