@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.24] - 2026-09-10
+
+### Fixed
+
+- Activating a bay whose group lives in a floating window opens that bay,
+  instead of the tab at the same position in the main window.
+- The extension icon.
+
 ## [0.4.23] - 2026-09-09
 
 ### Fixed
