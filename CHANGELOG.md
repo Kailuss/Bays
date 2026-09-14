@@ -7,6 +7,30 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.25] - 2026-09-14
+
+### Added
+
+- Terminals opened in the editor area are bays like any other: they activate,
+  close, pin and move between groups. Each one carries the icon its creator
+  declared, so a Claude Code terminal shows the Claude logo, and the terminal
+  codicon when no icon was declared.
+
+### Fixed
+
+- Editors VS Code does not describe, such as a view dragged into the editor
+  area (the Claude Code panel), a chat or a merge editor, answer clicks again.
+  They were modelled as file bays with no file, so nothing reached their native
+  tab: the row could not be activated, closed or moved, and its icon fell back
+  to the generic preview glyph.
+- A view dragged into the editor area shows the logo of the extension that
+  declares it, matched against the view name in its manifest.
+- A terminal no longer refreshes the list on every title change. Its id was
+  derived from the label, which a shell rewrites as you type, so the bay stopped
+  matching its own tab and the active row was recomputed on every keystroke.
+- An editor with no view type, such as a chat, keeps its identity when it
+  retitles itself: its id no longer carries the label.
+
 ## [0.4.24] - 2026-09-10
 
 ### Fixed
