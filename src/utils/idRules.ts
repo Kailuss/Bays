@@ -54,9 +54,15 @@ export function webviewBayId(
   viewType?: string,
   instance?: string,
 ): string {
-  const key = (viewType || label).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+  // Sin `viewType` el asiento es la única parte ESTABLE que queda, así que el
+  // label se cae del id en vez de acompañarlo: un editor que VS Code no describe
+  // —un chat, una vista arrastrada al área de editores— se retitula en caliente
+  // igual que un panel, y con el label dentro el id derivaría con cada cambio de
+  // título mientras el asiento, que ya identifica la tab, sigue siendo el mismo.
+  // Sin asiento no hay más remedio que el label, que es lo que había.
+  const key = viewType || instance ? (viewType ?? '') : label;
   const seat = instance ? `#${instance}` : '';
-  return `${bayType}:${key}${seat}-${viewColumn}`;
+  return `${bayType}:${key.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}${seat}-${viewColumn}`;
 }
 
 /**

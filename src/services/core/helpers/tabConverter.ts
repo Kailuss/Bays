@@ -114,13 +114,20 @@ function extractTabInputData(VSTab: vscode.Tab): TabInputData {
     };
   }
 
+  // Anything else is an input VS Code describes as UNKNOWN (`kind: 0`): a merge
+  // editor, a chat editor, an interactive window, a multi-file diff — and a view
+  // dragged into the editor area, which is how a Claude Code panel gets here.
+  // `webview` and not `file`: a tab with no uri activates and closes through its
+  // NATIVE tab, and `matchesNative` only takes that route for a webview bay. Said
+  // `file`, the bay was a row that no click could reach — the shape of this tab is
+  // a webview's, whatever VS Code declines to call it.
   return {
     uri         : undefined,
     label       : VSTab.label,
     description : undefined,
     tooltip     : VSTab.label,
     fileType    : '',
-    tabType     : 'file',
+    tabType     : 'webview',
   };
 }
 

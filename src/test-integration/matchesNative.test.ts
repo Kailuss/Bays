@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { BayHelpers } from '../models/BayHelpers';
+import { tabInstanceToken } from '../platform/tabIdentity';
 import type { BayMetadata } from '../models/Bay';
 
 // matchesNative es el emparejador bay ↔ tab nativa: decide si una fila del
@@ -50,6 +51,24 @@ suite('BayHelpers.matchesNative', () => {
 		const tab = makeTab(new vscode.TabInputWebview('some-view'), 'Mi Panel');
 		assert.strictEqual(BayHelpers.matchesNative(tab, makeMeta({ bayType: 'webview', label: 'Mi Panel' })), true);
 		assert.strictEqual(BayHelpers.matchesNative(tab, makeMeta({ bayType: 'webview', label: 'Otro' })), false);
+	});
+
+	test('an undescribed editor (no input) matches like a webview', () => {
+		// VS Code reports `input: undefined` for a merge editor, a chat, or a view
+		// dragged into the editor area. It used to arrive as bayType 'file', and a
+		// file bay cannot take this branch: the row answered no click at all.
+		const tab = makeTab(undefined, 'Claude Code');
+		const seat = tabInstanceToken(tab);
+
+		assert.strictEqual(
+			BayHelpers.matchesNative(tab, makeMeta({ bayType: 'webview', label: 'Claude Code', tabInstance: seat })),
+			true,
+		);
+		// A bay WITH a uri never resolves to an editor that has no input.
+		assert.strictEqual(
+			BayHelpers.matchesNative(tab, makeMeta({ bayType: 'file', uri: fileUri, label: 'Claude Code' })),
+			false,
+		);
 	});
 
 	test('diff tab: needs modified AND original URIs to agree', () => {

@@ -72,3 +72,13 @@ test('variantBayId: sin original sigue llevando el prefijo y la columna', () => 
 test('un id de variante nunca puede coincidir con uno de fichero', () => {
   assert.notEqual(variantBayId('file:///p/a.ts', undefined, 1), fileBayId('file:///p/a.ts', 1));
 });
+
+test('webviewBayId: with a seat and no viewType, the label is out of the id', () => {
+  // An editor VS Code does not describe has no viewType at all, and its title is
+  // rewritten while the tab lives (a chat names itself after the conversation).
+  // The seat already identifies the tab, so the label would only add drift.
+  assert.equal(
+    webviewBayId('Chat: how do I…', 1, 'webview', undefined, '7'),
+    webviewBayId('Chat: something else', 1, 'webview', undefined, '7'),
+  );
+});

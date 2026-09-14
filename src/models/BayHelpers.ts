@@ -193,7 +193,15 @@ export class BayHelpers {
       if (metadata.viewType && t.input.viewType === metadata.viewType) { return true; }
       return t.label === metadata.label;
     }
-    if (!t.input) { return metadata.bayType === 'webview' && !metadata.uri && t.label === metadata.label; }
+    // No input at all: VS Code declines to describe this editor (a merge editor, a
+    // chat, a view dragged into the editor area). It is treated like a webview, and
+    // for the same reason — the seat first, with the label as the only thing a bay
+    // without one has left.
+    if (!t.input) {
+      if (metadata.uri) { return false; }
+      if (metadata.tabInstance) { return tabInstanceToken(t) === metadata.tabInstance; }
+      return metadata.bayType === 'webview' && t.label === metadata.label;
+    }
     if (t.input instanceof vscode.TabInputTextDiff) {
       // Match on modified URI AND original URI so two different diffs of the same
       // file (e.g. working-tree vs a Copilot edit) don't resolve to each other.
