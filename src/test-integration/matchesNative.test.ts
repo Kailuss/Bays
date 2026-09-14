@@ -53,6 +53,27 @@ suite('BayHelpers.matchesNative', () => {
 		assert.strictEqual(BayHelpers.matchesNative(tab, makeMeta({ bayType: 'webview', label: 'Otro' })), false);
 	});
 
+	test('terminal: matches on the SEAT, never on the title', () => {
+		const tab = makeTab(new vscode.TabInputTerminal(), 'pwsh');
+		const seat = tabInstanceToken(tab);
+
+		// The shell has rewritten the title since the bay was built, and the bay
+		// still resolves: a terminal is keyed by its tab object and nothing else.
+		const meta = makeMeta({ bayType: 'terminal', label: 'Claude Code', tabInstance: seat });
+		assert.strictEqual(BayHelpers.matchesNative(tab, meta), true);
+
+		// Another terminal with the very same title is a different bay.
+		const other = makeMeta({ bayType: 'terminal', label: 'pwsh', tabInstance: seat + '-other' });
+		assert.strictEqual(BayHelpers.matchesNative(tab, other), false);
+	});
+
+	test('terminal: a seatless bay never resolves to a terminal tab', () => {
+		// Without a seat there is nothing left to compare, and the label is not an
+		// identity here — answering yes would let any bay grab any terminal.
+		const tab = makeTab(new vscode.TabInputTerminal(), 'pwsh');
+		assert.strictEqual(BayHelpers.matchesNative(tab, makeMeta({ bayType: 'terminal', label: 'pwsh' })), false);
+	});
+
 	test('an undescribed editor (no input) matches like a webview', () => {
 		// VS Code reports `input: undefined` for a merge editor, a chat, or a view
 		// dragged into the editor area. It used to arrive as bayType 'file', and a

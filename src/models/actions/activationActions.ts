@@ -35,14 +35,16 @@ async function activateWithRetry(
       throw new Error(`Bay '${metadata.label}' no longer exists (closed or replaced)`);
     }
 
-    // Para webview tabs, siempre usar el método nativo
-    // Variants (with parentId) are also activated via native bay
-    if (metadata.bayType === 'webview' || metadata.sourceBayId) {
+    // Anything WITHOUT a uri is activated through its native tab, because there is
+    // nothing to reopen by: a webview panel, a terminal, an editor VS Code declines
+    // to describe. Variants take the same route — a diff reopened by its uri serves
+    // the plain document instead.
+    //
+    // It used to ask for `bayType === 'webview'` and then bail out on a missing uri,
+    // and that is what left a TERMINAL row answering a click with nothing at all:
+    // not an error, not a retry, just a row that does not do anything.
+    if (!metadata.uri || metadata.sourceBayId) {
       return await BayHelpers.activateByNativeTab(metadata, state);
-    }
-
-    if (!metadata.uri) {
-      return;
     }
 
     // Si la bay nativa existe, SIEMPRE usar activación por índice

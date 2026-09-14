@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fileBayId, webviewBayId, variantBayId } from '../utils/idRules';
+import { fileBayId, webviewBayId, variantBayId, terminalBayId } from '../utils/idRules';
 
 // El id de una bay es el contrato más delicado del proyecto: el mismo id tiene
 // que poder RECONSTRUIRSE desde la tab nativa, o abrir, cerrar y sincronizar el
@@ -71,6 +71,24 @@ test('variantBayId: sin original sigue llevando el prefijo y la columna', () => 
 
 test('un id de variante nunca puede coincidir con uno de fichero', () => {
   assert.notEqual(variantBayId('file:///p/a.ts', undefined, 1), fileBayId('file:///p/a.ts', 1));
+});
+
+test('terminalBayId: the seat alone, never the title', () => {
+  // A terminal title is rewritten by the shell while the tab lives, so there is
+  // no label in the signature at all: the seat is the whole key.
+  assert.equal(terminalBayId('7', 1), 'terminal:#7-1');
+});
+
+test('terminalBayId: two terminals in one column do not collide', () => {
+  assert.notEqual(terminalBayId('7', 1), terminalBayId('8', 1));
+});
+
+test('terminalBayId: the same terminal in two columns are two bays', () => {
+  assert.notEqual(terminalBayId('7', 1), terminalBayId('7', 2));
+});
+
+test('a terminal id can never collide with a webview one', () => {
+  assert.notEqual(terminalBayId('7', 1), webviewBayId('Terminal', 1, 'webview', undefined, '7'));
 });
 
 test('webviewBayId: with a seat and no viewType, the label is out of the id', () => {

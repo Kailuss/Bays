@@ -7,8 +7,17 @@
  * `Bay.ts` los reexporta, así que nada más se entera de la partición.
  */
 
-/** Qué CLASE de tab nativa hay detrás de una bay. */
-export type BayType = 'file' | 'webview' | 'custom' | 'notebook';
+/**
+ * What KIND of native tab a bay wraps.
+ *
+ * `terminal` is a class of its own and not a webview under another name:
+ * `TabInputTerminal` carries NOTHING — no uri, no viewType, not even a terminal
+ * id — so it is the one input that cannot be asked anything, and everything a
+ * bay does with it (matching it back to its tab, composing its id, picking its
+ * icon) has to come from somewhere else. Folding it into `webview` would have
+ * hidden exactly that.
+ */
+export type BayType = 'file' | 'webview' | 'custom' | 'notebook' | 'terminal';
 
 /** Qué clase de comparación es una variante. */
 export type DiffType =

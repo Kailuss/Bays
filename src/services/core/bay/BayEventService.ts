@@ -246,7 +246,13 @@ export class BayEventService {
         // which re-keys the bay through onDidRenameFiles instead. Claude chat tabs
         // are excluded: ClaudeConversationService owns their label (it shows the
         // full, untruncated ai-title) and would fight a 24-char native update here.
-        if (existingBay.metadata.bayType === 'webview'
+        //
+        // Terminals are in the same branch and are the loudest case of it: a shell
+        // rewrites its own title, so this fires while you type. It is a patch in
+        // place and not a rebuild precisely because of that — and it only lands at
+        // all because a terminal bay is keyed by its SEAT (`terminalBayId`), so the
+        // id still resolves after the title moved.
+        if ((existingBay.metadata.bayType === 'webview' || existingBay.metadata.bayType === 'terminal')
             && existingBay.metadata.label !== bay.label
             && !ClaudeConversationService.isClaudeConversationBay(existingBay)) {
           existingBay.metadata.label = bay.label;

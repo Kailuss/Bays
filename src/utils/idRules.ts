@@ -66,6 +66,26 @@ export function webviewBayId(
 }
 
 /**
+ * Id of a TERMINAL bay.
+ *
+ * A terminal tab is the one input with nothing inside it: `TabInputTerminal` has
+ * no uri and no viewType, so the only thing left to key it by would be the
+ * LABEL — and a terminal label is the one label that rewrites itself constantly
+ * (the shell writes its title, and Claude Code writes its status into it). Keyed
+ * by the label the id drifts with every title change, which means the bay stored
+ * under the old one stops being found: the tab-change handler looks it up by the
+ * id it recomputes from the native tab, misses, and leaves a bay behind that
+ * nothing can activate, close or relabel.
+ *
+ * So it is keyed by the SEAT alone (`platform/tabIdentity.ts`), which is exactly
+ * the life of the tab and survives a retitle. The column is still part of it
+ * because moving a tab to another group is a different bay everywhere else here.
+ */
+export function terminalBayId(instance: string, viewColumn: number): string {
+  return `terminal:#${instance}-${viewColumn}`;
+}
+
+/**
  * Id de una variante (un diff, un snapshot).
  *
  * Derivado SOLO de las uris modificada y original y de la columna, que son las

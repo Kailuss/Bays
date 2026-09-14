@@ -193,6 +193,16 @@ export class BayHelpers {
       if (metadata.viewType && t.input.viewType === metadata.viewType) { return true; }
       return t.label === metadata.label;
     }
+    // A TERMINAL is the one input with nothing to compare: `TabInputTerminal` is an
+    // empty marker, so the only identity on offer is the tab OBJECT — its seat. The
+    // label cannot stand in for it, and not by a hair: a terminal title is rewritten
+    // by the shell while the tab lives, and two terminals sharing a name is the
+    // common case here, not the corner one.
+    if (t.input instanceof vscode.TabInputTerminal) {
+      return metadata.bayType === 'terminal'
+        && !!metadata.tabInstance
+        && tabInstanceToken(t) === metadata.tabInstance;
+    }
     // No input at all: VS Code declines to describe this editor (a merge editor, a
     // chat, a view dragged into the editor area). It is treated like a webview, and
     // for the same reason — the seat first, with the label as the only thing a bay
@@ -280,6 +290,7 @@ export class BayHelpers {
       if (lower.includes('output')) { return 'output'; }
       return 'webview';
     }
+    if (bayType === 'terminal') { return 'terminal'; }
     if (bayType === 'notebook') { return 'notebook'; }
     return 'file';
   }

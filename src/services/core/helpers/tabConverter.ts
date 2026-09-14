@@ -8,7 +8,7 @@ import { formatFilePathWithParts             } from '../../../platform/pathForma
 import { resolveLanguageId                   } from '../../../platform/languageRegistry';
 import { Logger                              } from '../../../platform/logger';
 import { tabInstanceToken                    } from '../../../platform/tabIdentity';
-import { fileBayId, webviewBayId, variantBayId } from '../../../utils/idRules';
+import { fileBayId, webviewBayId, variantBayId, terminalBayId } from '../../../utils/idRules';
 import { classifyDiffType, determineParentId, determineParentUri, resolveSourceUri } from './tabClassifier';
 
 type TabInputData = {
@@ -111,6 +111,20 @@ function extractTabInputData(VSTab: vscode.Tab): TabInputData {
       tooltip     : uri.fsPath,
       fileType    : path.extname(uri.fsPath),
       tabType     : 'notebook',
+    };
+  }
+
+  if (input instanceof vscode.TabInputTerminal) {
+    // `TabInputTerminal` is EMPTY: no uri, no viewType, not even a terminal id.
+    // The label is all VS Code hands over, and it is a title the shell rewrites,
+    // so it is carried for display only — never as identity (see `terminalBayId`).
+    return {
+      uri         : undefined,
+      label       : VSTab.label,
+      description : undefined,
+      tooltip     : VSTab.label,
+      fileType    : '',
+      tabType     : 'terminal',
     };
   }
 
@@ -380,9 +394,12 @@ export function generateId(
   viewType?  : string,
   instance?  : string,
 ): string {
-  return uri
-    ? fileBayId(uri.toString(), viewColumn)
-    : webviewBayId(label, viewColumn, tabType, viewType, instance);
+  if (uri) { return fileBayId(uri.toString(), viewColumn); }
+  // A terminal is keyed by its SEAT and never by its label, which rewrites itself
+  // while the tab lives. Only here, so the open path and the close/active-sync
+  // paths cannot disagree about it (`generateIdFromNativeTab` goes through this).
+  if (tabType === 'terminal' && instance) { return terminalBayId(instance, viewColumn); }
+  return webviewBayId(label, viewColumn, tabType, viewType, instance);
 }
 
 /**
