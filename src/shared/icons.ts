@@ -99,6 +99,17 @@ export const ICONS = {
     chat         : 'attach',
   },
 
+  /** What a bay IS, where neither the icon theme nor an owning extension says it. */
+  bay: {
+    /**
+     * A terminal. `TabInputTerminal` declares no icon and a plain shell asks for
+     * none either, so this answers for most terminal tabs — and it is the right
+     * answer: it is what the native tab paints on them too. A terminal whose
+     * creator DID declare an icon gets that one instead (`platform/terminalIcons.ts`).
+     */
+    terminal : 'terminal',
+  },
+
   /** Los repliegues cuando el tema de iconos no ofrece nada utilizable. */
   theme: {
     file : 'file',
@@ -115,4 +126,5 @@ export type IconName =
   | (typeof ICONS)['group'][keyof (typeof ICONS)['group']]
   | (typeof ICONS)['variant'][keyof (typeof ICONS)['variant']]
   | (typeof ICONS)['menu'][keyof (typeof ICONS)['menu']]
+  | (typeof ICONS)['bay'][keyof (typeof ICONS)['bay']]
   | (typeof ICONS)['theme'][keyof (typeof ICONS)['theme']];

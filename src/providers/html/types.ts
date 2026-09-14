@@ -33,11 +33,15 @@ export type BuildSectionsOptions = {
 /**
  * Petición de icono que falló la caché en el pintado síncrono, sin la bay a la
  * que pertenece: `file` se resuelve contra el icon theme por nombre de archivo;
- * `webview` lee del disco el icono de la extensión dueña de la tab.
+ * `webview` lee del disco el icono de la extensión dueña de la tab; `terminal`
+ * lee el que declaró quien creó el terminal, y lleva su uri ya resuelta porque
+ * emparejarla con el terminal es lo que no se puede volver a preguntar después
+ * (la lista de terminales abiertos se mueve).
  */
 export type PendingIconRequest =
   | { kind: 'file'; fileName: string; languageId?: string }
-  | { kind: 'webview'; viewType?: string; label: string };
+  | { kind: 'webview'; viewType?: string; label: string }
+  | { kind: 'terminal'; key: string };
 
 /** Icono pendiente de resolución diferida (cache miss en el primer pintado) */
 export type PendingIcon = PendingIconRequest & { bayId: string };

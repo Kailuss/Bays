@@ -10,6 +10,8 @@ import * as vscode from 'vscode';
 import { BayIconManager } from '../../services/ui/BayIconManager';
 import { Bay } from '../../models/Bay';
 import { resolveBuiltInCodicon } from '../../utils/builtinIcons';
+import { ICONS } from '../../shared/icons';
+import { lookupTerminalIcon, resolveTerminalIconAsync } from '../../platform/terminalIcons';
 import {
   lookupWebviewExtensionIcon,
   resolveWebviewExtensionIconAsync,
@@ -46,6 +48,20 @@ export class IconRenderer {
     pending: PendingIconRequest | null;
   } {
     const { bayType: tabType, viewType, label, uri, originalUri } = bay.metadata;
+
+    // Un TERMINAL no pasa ni por el tema de iconos —no hay fichero— ni por el
+    // índice de extensiones —no hay viewType—: su icono es el que declaró quien lo
+    // creó, y el codicon genérico cuando no declaró ninguno. Que ése sea el caso
+    // corriente no es un repliegue: es lo que la tab nativa dibuja para un shell.
+    if (tabType === 'terminal') {
+      const lookup = lookupTerminalIcon(label);
+      if (lookup.state === 'loaded')  { return { html: iconMarkerToHtml(lookup.dataUri), pending: null }; }
+      if (lookup.state === 'codicon') { return { html: codiconHtml(lookup.name, BUILTIN_ICON_COLOR), pending: null }; }
+      return {
+        html    : codiconHtml(ICONS.bay.terminal, BUILTIN_ICON_COLOR),
+        pending : lookup.state === 'deferrable' ? { kind: 'terminal', key: lookup.key } : null,
+      };
+    }
 
     // Los webviews de otras extensiones y las tabs empotradas sin URI (Settings,
     // «Extension: …»; `originalUri` descarta el diff defensivo sin uri) llevan el
@@ -89,6 +105,16 @@ export class IconRenderer {
    * el primer pintado. Devuelve el HTML del icono ya resuelto.
    */
   async resolvePending(request: PendingIconRequest): Promise<string> {
+    if (request.kind === 'terminal') {
+      try {
+        const dataUri = await resolveTerminalIconAsync(request.key);
+        if (dataUri) { return iconMarkerToHtml(dataUri); }
+      } catch (error) {
+        Logger.error(`[Bays] Deferred terminal icon failed for ${request.key}`, error);
+      }
+      return codiconHtml(ICONS.bay.terminal, BUILTIN_ICON_COLOR);
+    }
+
     if (request.kind === 'webview') {
       try {
         const dataUri = await resolveWebviewExtensionIconAsync(request.viewType, request.label);
