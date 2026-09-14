@@ -64,7 +64,10 @@ type ExtensionManifest = {
   name?        : string;
   displayName? : string;
   icon?        : string;
-  contributes? : { customEditors?: { viewType?: string }[] };
+  contributes? : {
+    customEditors? : { viewType?: string }[];
+    views?         : Record<string, { name?: string }[]>;
+  };
 };
 
 /** Resultado del lookup síncrono del primer pintado. */
@@ -81,6 +84,7 @@ const inflight = new Map<string, Promise<string | null>>();
 let candidates: Candidate[] = [];
 let byViewType = new Map<string, vscode.Extension<unknown>>();
 let byDisplayName = new Map<string, vscode.Extension<unknown>>();
+let byViewName = new Map<string, vscode.Extension<unknown>>();
 
 /**
  * (Re)builds the installed-extension index and warms the override icons. Safe
@@ -128,6 +132,7 @@ function buildExtensionIndex(): void {
   candidates    = [];
   byViewType    = new Map();
   byDisplayName = new Map();
+  byViewName    = new Map();
 
   for (const ext of vscode.extensions.all) {
     const pkg = ext.packageJSON as ExtensionManifest;
@@ -139,6 +144,17 @@ function buildExtensionIndex(): void {
 
     for (const editor of pkg.contributes?.customEditors ?? []) {
       if (editor.viewType) { byViewType.set(editor.viewType.toLowerCase(), ext); }
+    }
+
+    // Declared VIEWS, indexed by the name they show. A view dragged into the
+    // editor area arrives as a tab VS Code declines to describe — no viewType at
+    // all — and the only thing left on it is the label, which IS this name. So it
+    // maps back to its owner exactly, with no heuristic, the same way a custom
+    // editor's viewType does. `%key%` names are unresolved l10n placeholders.
+    for (const views of Object.values(pkg.contributes?.views ?? {})) {
+      for (const view of views) {
+        if (view.name && !view.name.startsWith('%')) { byViewName.set(view.name.toLowerCase(), ext); }
+      }
     }
 
     // `%key%` displayNames are unresolved localization placeholders.
@@ -163,19 +179,26 @@ function matchExtension(viewType?: string, label?: string): vscode.Extension<unk
     if (byName) { return byName; }
   }
 
-  if (!viewType) { return undefined; }
-  const raw = viewType.replace(VIEWTYPE_PREFIX, '').toLowerCase();
+  if (viewType) {
+    const raw = viewType.replace(VIEWTYPE_PREFIX, '').toLowerCase();
 
-  const declared = byViewType.get(raw);
-  if (declared) { return declared; }
+    const declared = byViewType.get(raw);
+    if (declared) { return declared; }
 
-  // All-tokens-present, longest match wins (keeps "git" from stealing "gitlens").
-  let best: Candidate | undefined;
-  for (const candidate of candidates) {
-    if (!candidate.tokens.every(t => raw.includes(t))) { continue; }
-    if (!best || candidate.score > best.score) { best = candidate; }
+    // All-tokens-present, longest match wins (keeps "git" from stealing "gitlens").
+    let best: Candidate | undefined;
+    for (const candidate of candidates) {
+      if (!candidate.tokens.every(t => raw.includes(t))) { continue; }
+      if (!best || candidate.score > best.score) { best = candidate; }
+    }
+    if (best) { return best.ext; }
   }
-  return best?.ext;
+
+  // Last: a tab with NO viewType, whose label is a declared view name. The token
+  // heuristic is deliberately not run over a label — a label is a title, so it is
+  // free to say anything, and guessing an owner from one would put a brand logo on
+  // a tab that has nothing to do with it.
+  return label ? byViewName.get(label.toLowerCase()) : undefined;
 }
 
 /** Cache → in-flight read → disk. Concurrent callers share one read. */
