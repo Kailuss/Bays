@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.27] - 2026-10-03
+
+### Changed
+
+- The marketplace title is Bays (SideTabs), where it was Editor Bays.
+  Everything read inside the window is still called Editors.
+
 ## [0.4.26] - 2026-10-03
 
 ### Added
