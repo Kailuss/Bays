@@ -19,9 +19,11 @@ const SRC  = path.join(ROOT, 'src');
 const L10N = path.join(ROOT, 'l10n');
 
 /**
- * La guia interna. NO viaja a GitHub: es documentacion para un agente y se queda
- * en local (ver `checkNoAgentDocs`), asi que en un clon limpio no esta y todo lo
- * que se apoye en ella tiene que saber vivir sin ella.
+ * La guia interna. SI viaja: es el registro de diseno de este repositorio y no
+ * configuracion de una herramienta, asi que vive en git como el codigo que
+ * describe (ver `checkNoAgentDocs`, que mantiene fuera todo lo demas). Lo que se
+ * apoye en ella sigue sabiendo vivir sin ella: un arbol al que le falte se dice
+ * en voz alta en vez de pasar en verde.
  */
 const GUIDE = 'CLAUDE.md';
 
@@ -470,10 +472,11 @@ function checkCitedIdentifiers() {
 	// nunca. Es el mismo agujero que el de los comentarios, un fichero más allá.
 	//
 	// Y solo se puede preguntar con la GUIA delante: NOT_OURS existe para lo que
-	// cita la guia, que es local y no viaja a GitHub, asi que en un clon limpio no
-	// hay ningun documento que las cite y salen todas a la vez como muertas. Se
-	// salta EN VOZ ALTA, que es lo unico que impide que un check que no corre se
-	// convierta en un check que nadie echa de menos.
+	// cita la guia, asi que sin ella no hay ningun documento que las cite y salen
+	// todas a la vez como muertas. Hoy la guia viaja en git, asi que esto solo
+	// salta en un arbol al que le falte. Se salta EN VOZ ALTA, que es lo unico que
+	// impide que un check que no corre se convierta en un check que nadie echa de
+	// menos.
 	if (!fs.existsSync(path.join(ROOT, GUIDE))) {
 		console.log(`[check-layers] no ${GUIDE} here, so the NOT_OURS reverse check did not run: it only says anything against the guide`);
 		return;
@@ -659,12 +662,18 @@ function checkBundles() {
 	}
 }
 
-//= 9. NADA DE DOCUMENTACION DE IA NI DE AGENTES EN GIT
+//= 9. NADA DE ESTADO DE HERRAMIENTA DE IA EN GIT
 //
-// Lo que un agente lee para trabajar aqui es de ESTA maquina y no del proyecto:
-// la guia interna, las instrucciones de un asistente, la configuracion de un
-// servidor MCP. Trackeado, viaja a GitHub, donde no le sirve a nadie que venga a
-// leer el codigo y donde envejece sin que lo lea nadie.
+// El ESTADO de una herramienta es de ESTA maquina y no del proyecto: las
+// instrucciones de un asistente, los directorios que cada uno se trae, la
+// configuracion de un servidor MCP. Trackeado, viaja a GitHub, donde no le sirve
+// a nadie que venga a leer el codigo y donde envejece sin que lo lea nadie; y el
+// de MCP suele llevar una clave dentro.
+//
+// `CLAUDE.md` NO esta en la lista, y es la frontera entera: no es configuracion
+// sino el registro de diseno de este repositorio, asi que pertenece a git por lo
+// mismo que el codigo que describe. Un `CLAUDE.<algo>.md` si entra, porque eso ya
+// es una variante local.
 //
 // Lo que se afirma es que no esten TRACKEADOS, NO que no existan: en disco son
 // justo lo que hace falta para trabajar, y este propio fichero los nombra.
@@ -674,8 +683,9 @@ function checkBundles() {
 // ignorarlo —que `.gitignore` no saca— y un nombre nuevo que la lista no
 // nombraba entran igual, y ninguna de las tres se ve en una revision.
 const AGENT_DOCS = [
-	// La guia de este repo y las de los demas asistentes.
-	/^CLAUDE(\.[\w-]+)?\.md$/i,
+	// Las variantes LOCALES de la guia y las de los demas asistentes. La guia
+	// propia, `CLAUDE.md` a secas, se queda fuera a proposito (ver arriba).
+	/^CLAUDE\.[\w-]+\.md$/i,
 	/^AGENTS?\.md$/i,
 	/^GEMINI\.md$/i,
 	/(^|\/)\.?(cursorrules|windsurfrules|clinerules|aiderrules)$/i,

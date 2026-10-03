@@ -9,18 +9,22 @@ node_modules
 # se queda fuera es siempre el SIGUIENTE.
 [Pp]lan*.md
 
-# La documentacion de IA y de agentes se queda EN LOCAL y no viaja a GitHub: es
-# de esta maquina y no del proyecto, asi que a quien clona el repositorio para
-# leer el codigo no le sirve de nada y ahi envejece sin que la lea nadie.
+# El ESTADO de una herramienta de IA se queda EN LOCAL y no viaja a GitHub: las
+# instrucciones de un asistente, los directorios que cada uno se trae, la
+# configuracion de un servidor MCP —que suele llevar una clave dentro—. Es de
+# esta maquina y no del proyecto, asi que a quien clona el repositorio para leer
+# el codigo no le sirve de nada y ahi envejece sin que lo lea nadie.
 #
-# Lo que cuesta hay que decirlo, porque es real: sin trackear, un `git clean -x`
-# se la lleva, no se revisa en un PR y no queda historia de cuando dejo de ser
-# verdad. La copia buena es la de disco.
+# `CLAUDE.md` es la EXCEPCION y SI se trackea, porque no es configuracion sino el
+# registro de diseno de este repositorio: sin git, un `git clean -x` se lo lleva
+# entero y sin vuelta, una edicion mala es permanente, y cuando dejo de ser verdad
+# una regla no queda escrito en ninguna parte. Su propia convencion es que los
+# comentarios explican el porque en PRESENTE y no narran el pasado, y eso solo se
+# sostiene mientras el pasado este en el commit.
 #
-# Y no basta con ignorarlas: `.gitignore` no saca lo que YA estaba trackeado y no
-# alcanza un `git add -f`. Quien lo hace cumplir es `checkNoAgentDocs`, en
-# scripts/check-layers.js, que corta si alguna esta en el indice.
-CLAUDE.md
+# Y no basta con ignorar lo demas: `.gitignore` no saca lo que YA estaba trackeado
+# y no alcanza un `git add -f`. Quien lo hace cumplir es `checkNoAgentDocs`, en
+# scripts/check-layers.js, que corta si alguno esta en el indice.
 CLAUDE.*.md
 AGENT.md
 AGENTS.md
