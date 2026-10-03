@@ -1,6 +1,6 @@
 {
   "name": "bays",
-  "displayName": "Editor Bays",
+  "displayName": "Bays (SideTabs)",
   "description": "%description%",
   "version": "0.4.26",
   "publisher": "Lovervoid",
@@ -30,7 +30,8 @@
     "editors",
     "sidebar",
     "vertical tabs",
-    "open editors"
+    "open editors",
+    "sidetabs"
   ],
   "activationEvents": [
     "onStartupFinished"

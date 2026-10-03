@@ -2,7 +2,7 @@
 
 The tab bar works until it doesn't. Open a dozen files and the tabs shrink, then scroll, then start hiding the one you want behind a chevron.
 
-**Editor Bays puts your open editors in a vertical list in the sidebar**, where a name stays readable however many of them there are.
+**Bays puts your open editors in a vertical list in the sidebar**, where a name stays readable however many of them there are.
 
 ## A list you can actually read
 
@@ -73,7 +73,7 @@ The toolbar carries a **View Options** menu for the two you flip most, and a **S
 
 ## A few things worth knowing
 
-Editor Bays has a few deliberate boundaries:
+Bays has a few deliberate boundaries:
 
 - **Cursor position sync is experimental**, and off until you ask for it.
 - A webview cannot cross the application boundary: nothing can be dragged in from outside VS Code.
@@ -89,7 +89,7 @@ Settings use the `bays.` prefix: filter for `@ext:Lovervoid.bays`.
 
 Requires VS Code **1.85** or later.
 
-## Why Editor Bays?
+## Why Bays?
 
 Because the tab bar runs out of room and the sidebar does not.
 
