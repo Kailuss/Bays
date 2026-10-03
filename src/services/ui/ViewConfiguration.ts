@@ -1,6 +1,17 @@
 import * as vscode from 'vscode';
 import type { ViewPrefs } from './ViewPrefs';
-import { parseHoverDelay, parseMotion } from '../../utils/settingsRules';
+import {
+  answeredFlag,
+  parseHoverDelay,
+  parseMotion,
+  parsePathSeparator,
+  resolveTwinSetting,
+} from '../../utils/settingsRules';
+import { extensionPresent, writtenValue } from '../../platform/twinSettings';
+import type { PathSeparator } from '../../shared/protocol';
+
+/** Atria's id, which is the one thing a twin setting asks about its owner. */
+const ATRIA = 'Lovervoid.atria';
 
 /**
  * What governs the view right now.
@@ -18,7 +29,60 @@ export type BaysConfiguration = {
   hoverDelay         : number;
   /** `bays.animations` folded together with `workbench.reduceMotion`. */
   motion             : boolean;
+  /** The sign a row's path is written with, out of the two keys that ask it. */
+  pathSeparator      : PathSeparator;
 };
+
+/**
+ * Whether the view MOVES, out of the two keys that ask it.
+ *
+ * One question with two prefixes — `bays.animations` here and
+ * `navigator.animations` there — and whether something moves is PRESENTATION,
+ * which is Atria's half of the house rule, so where it is installed its key is
+ * the one that governs (see the guide, *Lo que se comparte con Atria*).
+ *
+ * `workbench.reduceMotion` is NOT part of the twin: it belongs to neither
+ * extension and is the second input of one answer, which is why it is folded in
+ * afterwards by `parseMotion`.
+ */
+function animations(config: vscode.WorkspaceConfiguration): unknown {
+  const owner = extensionPresent(ATRIA)
+    ? answeredFlag(writtenValue('navigator.animations'))
+    : undefined;
+  const own = answeredFlag(writtenValue('bays.animations'));
+  // Back to the raw shape `parseMotion` takes, so the default stays stated in
+  // one place: `undefined` is nobody having answered, which is what a key that
+  // was never written already means to it.
+  return resolveTwinSetting({ own, owner }).value ?? config.get('animations');
+}
+
+/**
+ * The sign between two folder names, out of the two keys that ask it.
+ *
+ * Atria owns it for the same reason, and its vocabulary covers this view's own
+ * look: the chevron this extension has always drawn is one of the four that key
+ * takes, which is why yielding costs nothing. While nobody has answered either
+ * key, this view's own default is what paints — so the rows look exactly as they
+ * did, Atria installed or not.
+ */
+function separator(): PathSeparator {
+  // Each side composed only where its CHARACTER was written. The spacing is a
+  // second key and cannot stand on its own: a spacing with no sign to space is
+  // not an answer to which sign is used, so it never carries a side.
+  const ownSign = writtenValue('bays.paths.separator');
+  const own = ownSign === undefined
+    ? undefined
+    : parsePathSeparator(ownSign, writtenValue('bays.paths.separatorSpaced') ?? true);
+
+  const ownerSign = extensionPresent(ATRIA) ? writtenValue('navigator.paths.separator') : undefined;
+  const owner = ownerSign === undefined
+    ? undefined
+    : parsePathSeparator(ownerSign, writtenValue('navigator.paths.separatorSpaced'));
+
+  // Nobody has answered either: this view's own default, which is what it has
+  // always drawn.
+  return resolveTwinSetting({ own, owner }).value ?? ' › ';
+}
 
 /**
  * Reads the six answers, from the layer each of them lives in.
@@ -39,9 +103,10 @@ function readConfiguration(prefs: ViewPrefs): BaysConfiguration {
     enableDragDrop     : config.get('enableDragDrop'    , true),
     hoverDelay         : parseHoverDelay(vscode.workspace.getConfiguration('workbench.hover').get('delay')),
     motion             : parseMotion(
-      config.get('animations'),
+      animations(config),
       vscode.workspace.getConfiguration('workbench').get('reduceMotion'),
     ),
+    pathSeparator      : separator(),
   };
 }
 
@@ -69,6 +134,10 @@ export class ViewConfiguration {
       // leave the view answering with the previous value for either of them.
       vscode.workspace.onDidChangeConfiguration(() => { this.cached = undefined; }),
       prefs.onDidChange(() => { this.cached = undefined; }),
+      // Two of these answers are TWINS, and which side governs depends on
+      // whether Atria is installed — which installing or disabling it moves
+      // without reloading the window and without a configuration event.
+      vscode.extensions.onDidChange(() => { this.cached = undefined; }),
     );
   }
 

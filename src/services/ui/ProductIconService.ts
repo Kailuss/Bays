@@ -24,6 +24,11 @@
 // nada del disco.
 
 import * as vscode from 'vscode';
+import { answeredFlag, resolveTwinSetting } from '../../utils/settingsRules';
+import { extensionPresent, writtenValue } from '../../platform/twinSettings';
+
+/** Atria's id, which is the one thing a twin setting asks about its owner. */
+const ATRIA = 'Lovervoid.atria';
 import * as fsp from 'fs/promises';
 import * as path from 'path';
 import { Logger } from '../../platform/logger';
@@ -74,7 +79,8 @@ export class ProductIconService implements vscode.Disposable {
         // lo que produce no es un valor que meter en un mensaje sino una hoja
         // leída del disco, y esto es lo único que la lee.
         if (!e.affectsConfiguration('workbench.productIconTheme')
-          && !e.affectsConfiguration('bays.followProductIconTheme')) { return; }
+          && !e.affectsConfiguration('bays.followProductIconTheme')
+          && !e.affectsConfiguration('navigator.followProductIconTheme')) { return; }
         // La respuesta se tira en vez de releerse aquí: quien la pide es un
         // cliente, y puede no haberlo.
         this.css     = undefined;
@@ -115,7 +121,20 @@ export class ProductIconService implements vscode.Disposable {
    * haciendo lo que hace quien nunca tocó el ajuste, y eso es seguirlo.
    */
   private follows(): boolean {
-    return vscode.workspace.getConfiguration('bays').get('followProductIconTheme') !== false;
+    // One question with two prefixes — `bays.followProductIconTheme` here and
+    // `navigator.followProductIconTheme` there — and whether the panel's glyphs
+    // follow the workbench's pack is PRESENTATION, which is Atria's half of the
+    // house rule: where it is installed its key is the one that governs (see
+    // the guide, *Lo que se comparte con Atria*).
+    //
+    // Fails ON through the rule as it did on its own: only a real `false` keeps
+    // the pack out, so an unreadable value on either side leaves the view doing
+    // what whoever never touched the setting expects.
+    const owner = extensionPresent(ATRIA)
+      ? answeredFlag(writtenValue('navigator.followProductIconTheme'))
+      : undefined;
+    const own = answeredFlag(writtenValue('bays.followProductIconTheme'));
+    return resolveTwinSetting({ own, owner }).value !== false;
   }
 
   private async read(theme: string): Promise<void> {

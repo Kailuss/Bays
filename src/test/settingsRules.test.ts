@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseHoverDelay, parseMotion, HOVER_DELAY_MS } from '../utils/settingsRules';
+import { answeredFlag, parseHoverDelay, parseMotion, parsePathSeparator, resolveTwinSetting, HOVER_DELAY_MS } from '../utils/settingsRules';
 
 // Lo que se lee de la configuracion no tiene tipo: un `get` devuelve lo que haya
 // escrito en el settings.json. Lo que estos casos fijan es en que DIRECCION
@@ -53,4 +53,53 @@ test('un valor ilegible del interruptor deja la vista moviendose', () => {
   // Falla ABIERTO: lo que espera quien nunca toco el ajuste es que se mueva.
   assert.equal(parseMotion('si', undefined), true);
   assert.equal(parseMotion(null, undefined), true);
+});
+
+//= UNA PREGUNTA QUE DOS EXTENSIONES HACEN
+
+test('manda el dueño donde ha contestado', () => {
+  // La regla por la que existe el reparto: los dos paneles de la ventana
+  // escribiendo la misma ruta de dos maneras es el fallo, y es callado.
+  assert.deepEqual(resolveTwinSetting({ own: ' › ', owner: ' / ' }), {
+    value    : ' / ',
+    from     : 'owner',
+    conflict : true,
+  });
+});
+
+test('una clave contestada no se cede por una sin contestar', () => {
+  // Quien eligió el punto aquí y no ha tocado Atria ha contestado esta
+  // pregunta: instalar Atria no puede devolverle el chevrón.
+  assert.deepEqual(resolveTwinSetting({ own: ' • ' }), {
+    value    : ' • ',
+    from     : 'own',
+    conflict : false,
+  });
+});
+
+test('sin nadie que haya contestado no hay respuesta, y quien lee cae en su defecto', () => {
+  assert.deepEqual(resolveTwinSetting({}), { value: undefined, from: 'default', conflict: false });
+});
+
+test('un booleano cuenta como contestado solo si lo está', () => {
+  // El contrato que la regla necesita: un parser que funda el defecto
+  // convertiría cada silencio en una respuesta, y entonces el defecto del
+  // dueño le ganaría a un valor que alguien tecleó aquí.
+  assert.equal(answeredFlag(false), false);
+  assert.equal(answeredFlag(true), true);
+  assert.equal(answeredFlag(undefined), undefined);
+  assert.equal(answeredFlag('false'), undefined);
+  assert.equal(answeredFlag(0), undefined);
+});
+
+test('el separador toma los cuatro signos de Atria y nada más', () => {
+  // El vocabulario es el del dueño, y por eso incluye los dos tipográficos:
+  // con dos valores, ceder a su clave le habría costado a esta vista el signo
+  // que siempre ha dibujado.
+  assert.equal(parsePathSeparator('›', true), ' › ');
+  assert.equal(parsePathSeparator('•', true), ' • ');
+  assert.equal(parsePathSeparator('/', false), '/');
+  assert.equal(parsePathSeparator('\\', false), '\\');
+  assert.equal(parsePathSeparator('>', true), ' \\ ');
+  assert.equal(parsePathSeparator(undefined, false), '\\');
 });

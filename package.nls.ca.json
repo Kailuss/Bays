@@ -42,5 +42,11 @@
   "config.followProductIconTheme": "Dibuixa els glifs del tauler amb el paquet d'icones de producte triat a `workbench.productIconTheme`, com la resta de l'entorn. Apagat, el tauler es queda amb els codicons que porta l'extensió i no es llegeix res del disc.",
   "config.trace": "Escriu al canal de sortida Editors una traça detallada del que l'extensió està fent. Apagat per defecte: aquestes línies són per depurar, i escriure-les costa una marca de temps i un viatge al canal en camins que corren un cop per pestanya. Els avisos i els errors s'escriuen igualment.",
   "capabilities.untrustedWorkspaces": "L'extensió només llegeix la llista d'editors oberts i el seu estat de git i de diagnòstics. Mai no executa codi de l'espai de treball.",
-  "capabilities.virtualWorkspaces": "L'extensió funciona en un espai de treball virtual. Les accions que necessiten un fitxer al disc, i l'estat del git, no hi són disponibles."
+  "capabilities.virtualWorkspaces": "L'extensió funciona en un espai de treball virtual. Les accions que necessiten un fitxer al disc, i l'estat del git, no hi són disponibles.",
+  "config.paths.separator": "Quin signe va entre dos noms de carpeta en la ruta d'una fila. Amb Atria instal·lada mana el seu `navigator.paths.separator`: com s'escriu una ruta és presentació, així que una resposta amb un sol amo evita que els panells de la finestra escriguin la mateixa ruta de dues maneres.",
+  "config.paths.separatorSpaced": "Posa un espai a cada costat d'aquest signe. Els dos tipogràfics es llegeixen millor amb ells.",
+  "config.paths.separator.backslash.label": "Barra invertida",
+  "config.paths.separator.slash.label": "Barra",
+  "config.paths.separator.chevron.label": "Xebró",
+  "config.paths.separator.bullet.label": "Punt"
 }

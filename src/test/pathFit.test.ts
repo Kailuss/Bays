@@ -61,3 +61,20 @@ test('a single segment: either whole, or the ellipsis', () => {
   assert.equal(fitPathParts(['src'], 3, chars), 'src');
   assert.equal(fitPathParts(['src'], 2, chars), ELLIPSIS);
 });
+
+test('el signo se RECIBE, y el de siempre es el defecto', () => {
+  // Cuál se escribe es del usuario y lo compone el host de dos claves, así que
+  // esta regla no lo lee: lo toma. Sin que nadie lo diga, el que esta vista ha
+  // dibujado siempre.
+  const wide = () => 0;
+  assert.equal(fitPathParts(['src', 'webview'], 100, wide), `src${ROW_SEPARATOR}webview`);
+  assert.equal(fitPathParts(['src', 'webview'], 100, wide, ' / '), 'src / webview');
+  assert.equal(fitPathParts(['src', 'webview'], 100, wide, ' • '), 'src • webview');
+});
+
+test('lo que se recorta se recorta con el signo que se le dio', () => {
+  // La cabeza es lo que se va, y la elipsis se une con el mismo signo: dos
+  // signos en una sola ruta se leerían como dos rutas.
+  const only = (text: string) => (text === `b / c` || text === `${ELLIPSIS} / c` ? 1 : 1000);
+  assert.equal(fitPathParts(['a', 'b', 'c'], 1, only, ' / '), `${ELLIPSIS} / c`);
+});

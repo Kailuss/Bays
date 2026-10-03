@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ViewConfiguration }    from '../services/ui/ViewConfiguration';
 import { ProductIconService }   from '../services/ui/ProductIconService';
+import { AtriaService } from '../services/integration/AtriaService';
 import { TIMINGS }              from '../constants/timings';
 import { Bay }                  from '../models/Bay';
 import { BayGroup, getGroupLabel } from '../models/BayGroup';
@@ -72,6 +73,7 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     groupActions: GroupActions,
     private readonly config: ViewConfiguration,
     private readonly productIcons: ProductIconService,
+    private readonly atria: AtriaService,
   ) {
     this.htmlBuilder  = new BaysHtmlBuilder(_extensionUri, iconManager, context, fileActionRegistry);
     this.variantCloser = new VariantCloser(stateService);
@@ -88,6 +90,10 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
       stateService.onDidChangeBayLabel((bayId: string) => this.notifyBayLabelChanged(bayId)),
       // Rebuild when workspace folders change (updates header title)
       vscode.workspace.onDidChangeWorkspaceFolders(() => this.refresh()),
+      // The window renamed in Atria, or Atria itself installed or removed —
+      // which reloads no window and moves both the panel's title and the sign
+      // every path is written with.
+      atria.onDidChange(() => this.refresh()),
     );
   }
 
@@ -168,6 +174,7 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
       showPath: config.showFilePath,
       hoverDelay: config.hoverDelay,
       motion  : config.motion,
+      pathSeparator: config.pathSeparator,
     } satisfies RenderMessage);
 
     // Also update the native VS Code panel title
@@ -562,7 +569,23 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
    *  - sin fichero de workspace la ventana ES una carpeta, así que su nombre lo
    *    dice. Ahí no hay nada que confundir: solo hay un proyecto.
    */
+  /**
+   * What the panel is titled: the name this WINDOW goes by.
+   *
+   * Atria's first, where that extension is installed and the window has been
+   * renamed there. That name is chosen by whoever uses Atria and lives in ITS
+   * `workspaceState`, which is per extension, so its API is the only way to it
+   * — and a window renamed in one panel and not the other is two names for one
+   * window, side by side.
+   *
+   * It is the WINDOW and not a project, which is the question this view
+   * actually asks: its paths never name a workspace folder (`asRelativePath` is
+   * called without it), so the only thing named here is the window.
+   */
   private getWorkspaceName(): string {
+    const named = this.atria.windowName();
+    if (named !== null) { return named; }
+
     const wsFile = vscode.workspace.workspaceFile;
     if (wsFile) {
       if (wsFile.scheme === 'untitled') { return 'Workspace'; }

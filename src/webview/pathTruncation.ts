@@ -23,7 +23,7 @@
 // would re-fit every path in the list. What knows which rows are new is the
 // reconciliation (`render.ts`), which has just built them, so it is what says so.
 
-import { fitPathParts } from '../utils/pathFit';
+import { fitPathParts, ROW_SEPARATOR } from '../utils/pathFit';
 
 /** Cushion against sub-pixel rounding, which otherwise makes the level oscillate. */
 const SAFETY_BUFFER = 3;
@@ -236,13 +236,30 @@ function truncate(paths: Iterable<HTMLElement>): void {
 
   // 2. MEASURE. Only cache misses reach the measurer.
   const results = fits.map(fit =>
-    fitPathParts(fit.parts, fit.available, text => measure(fit.font, text)));
+    fitPathParts(fit.parts, fit.available, text => measure(fit.font, text), separator));
 
   // 3. WRITE, and only what actually changes: reassigning `textContent` replaces
   //    the text node, so a no-op write costs a reflow for nothing.
   for (let i = 0; i < fits.length; i++) {
     if (fits[i].el.textContent !== results[i]) { fits[i].el.textContent = results[i]; }
   }
+}
+
+/**
+ * The sign between two folders, as the last render said it.
+ *
+ * Module state and not a parameter threaded through every pass: it is one
+ * answer for the whole document, it changes a handful of times in a session,
+ * and the truncation cache is keyed on the text it produces — so a sign that
+ * moved has to invalidate nothing of its own.
+ */
+let separator = ROW_SEPARATOR;
+
+/** What the render brought. Re-cut everything, since every path is written with it. */
+export function setPathSeparator(sign: string): boolean {
+  if (sign === separator) { return false; }
+  separator = sign;
+  return true;
 }
 
 const PATH_SELECTOR = '.bay-path, .bay-path-inline';

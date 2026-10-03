@@ -42,5 +42,11 @@
   "config.followProductIconTheme": "Draw the panel's glyphs with the product icon theme selected in `workbench.productIconTheme`, like the rest of the workbench. Off, the panel keeps the codicons the extension ships, and nothing is read from disk.",
   "config.trace": "Write a detailed trace of what the extension is doing to the Editors output channel. Off by default: those lines are for debugging, and writing them costs a timestamp and a channel round trip on paths that run once per tab. Warnings and errors are written either way.",
   "capabilities.untrustedWorkspaces": "The extension only reads the list of open editors and their git and diagnostic state. It never runs code from the workspace.",
-  "capabilities.virtualWorkspaces": "The extension works in a virtual workspace. File actions that need a file on disk, and git state, are not available there."
+  "capabilities.virtualWorkspaces": "The extension works in a virtual workspace. File actions that need a file on disk, and git state, are not available there.",
+  "config.paths.separator": "Which sign goes between two folder names in a row's path. With Atria installed its own `navigator.paths.separator` is the one that governs: how a path is written is presentation, so one answer with one owner keeps the window's panels from spelling the same path two ways.",
+  "config.paths.separatorSpaced": "Puts a space on each side of that sign. The two typographic ones read best with them.",
+  "config.paths.separator.backslash.label": "Backslash",
+  "config.paths.separator.slash.label": "Slash",
+  "config.paths.separator.chevron.label": "Chevron",
+  "config.paths.separator.bullet.label": "Bullet"
 }

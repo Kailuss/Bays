@@ -13,12 +13,18 @@
 // picks another and the one after that comes back.
 
 /**
- * What separates two folders IN THE ROW.
+ * What separates two folders IN THE ROW, while nobody has said otherwise.
  *
  * Not the `PATH_SEPARATOR` of `pathParts.ts`, and not to be merged with it: that
  * one is what the host writes into `detailLabel`, which besides seeding this row
  * is the description of a row in Copilot's quick pick. Two surfaces, and only
  * this one gets cut down.
+ *
+ * A DEFAULT now rather than the answer: which sign a path is written with is the
+ * user's, and where Atria is installed it is that extension's key that governs
+ * (see the guide). It arrives with the render, so this is what stands until the
+ * first one does — and it is the value that key would have to be set to in order
+ * to leave the rows looking exactly as they always have.
  */
 export const ROW_SEPARATOR = ' › ';
 
@@ -42,15 +48,23 @@ export type Measure = (text: string) => number;
  * @param available the pixels there are, with everything else in the row already
  *                  subtracted.
  * @param measure   how wide a text comes out in that row's typeface.
+ * @param separator the sign between two folders, which the user chooses. RECEIVED
+ *                  and not read: this is a pure rule, and the answer is composed
+ *                  by the host out of two keys.
  */
-export function fitPathParts(parts: readonly string[], available: number, measure: Measure): string {
+export function fitPathParts(
+  parts: readonly string[],
+  available: number,
+  measure: Measure,
+  separator: string = ROW_SEPARATOR,
+): string {
   if (parts.length === 0) { return ''; }
 
-  const full = parts.join(ROW_SEPARATOR);
+  const full = parts.join(separator);
   if (measure(full) <= available) { return full; }
 
   for (let n = parts.length - 1; n >= 1; n--) {
-    const candidate = ELLIPSIS + ROW_SEPARATOR + parts.slice(parts.length - n).join(ROW_SEPARATOR);
+    const candidate = ELLIPSIS + separator + parts.slice(parts.length - n).join(separator);
     if (measure(candidate) <= available) { return candidate; }
   }
 

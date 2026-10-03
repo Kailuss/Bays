@@ -203,6 +203,13 @@ const FOREIGN_SETTINGS = new Set([
 	// el usuario ya ha dado.
 	'delay',
 	'reduceMotion',
+	// De ATRIA, que es la DUEÑA de estas tres: cómo se escribe una ruta, si algo
+	// se mueve y si los glifos siguen al pack del workbench son presentación, y
+	// una respuesta tiene un solo dueño (ver la guía).
+	'navigator.paths.separator',
+	'navigator.paths.separatorSpaced',
+	'navigator.animations',
+	'navigator.followProductIconTheme',
 ]);
 
 function checkSettings() {
@@ -218,13 +225,23 @@ function checkSettings() {
 			if (declared.has(key) || FOREIGN_SETTINGS.has(key)) { continue; }
 			fail(`${rel(file)} reads the setting "${key}", which the manifest does not declare and FOREIGN_SETTINGS does not name`);
 		}
+		// Una lectura de GEMELO nombra el id ENTERO, porque el valor puede venir
+		// de la sección de otra extensión de la casa y el ayudante lo parte
+		// (`platform/twinSettings.ts`). Escaneada también, o una clave alcanzada
+		// así quedaría fuera de esta lista — que es el único sitio que dice, en
+		// una pantalla, cada ajuste que esta vista lee y no declara.
+		for (const [, id] of source.matchAll(/writtenValue\(\s*'([^']+)'/g)) {
+			const key = id.startsWith('bays.') ? id.slice('bays.'.length) : id;
+			if (declared.has(key) || FOREIGN_SETTINGS.has(key) || FOREIGN_SETTINGS.has(id)) { continue; }
+			fail(`${rel(file)} reads the setting "${id}", which the manifest does not declare and FOREIGN_SETTINGS does not name`);
+		}
 	}
 
 	// Y al revés: un ajuste declarado que nadie lee es un interruptor muerto que
 	// el usuario puede mover sin que pase nada.
 	const sources = sourceFiles(SRC).map(read).join('\n');
 	for (const key of declared) {
-		if (!sources.includes(`'${key}'`)) {
+		if (!sources.includes(`'${key}'`) && !sources.includes(`'bays.${key}'`)) {
 			fail(`the manifest declares "bays.${key}" and no code reads it: a switch nobody is wired to`);
 		}
 	}
@@ -318,6 +335,14 @@ const NOT_OURS = new Set([
 	'fontCharacter', 'iconDefinitions', 'fileExtensions', 'languageIds',
 	'onDidChange', 'getAPI', 'preserveFocus', 'viewColumn', 'isDirty',
 	'preLaunchTask', 'endsPattern',
+	// De ATRIA: su superficie exportada y las preguntas que lleva. Están en el
+	// otro repositorio, que es el punto entero de leerlas por `exports` (ver
+	// *Lo que se comparte con Atria*).
+	'AtriaApi', 'repoAliases',
+	// De TRELLO: las herramientas MCP con las que se opera el tablero (ver
+	// *Tareas — el tablero de Trello*).
+	'trelloReadBoard', 'trelloReadCard', 'trelloWriteCard',
+	'list_labels', 'attach_label', 'mark_done',
 	// De VS CODE, del comando con el que se muda una tab: el orden en el que
 	// `moveActiveEditor` indexa los grupos, y las dos mitades del nombre de los
 	// comandos con ordinal que la guia explica que NO existen.

@@ -7,6 +7,23 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.26] - 2026-10-03
+
+### Added
+
+- `bays.paths.separator` and `bays.paths.separatorSpaced`: which sign goes
+  between two folder names in a row's path, out of the four Atria offers. The
+  chevron the rows have always been drawn with is the default.
+
+### Changed
+
+- With the Atria extension installed, the sign a path is written with, whether
+  anything moves and whether the panel's glyphs follow the workbench's icon
+  pack are read from its settings, and the panel is titled with the name the
+  window goes by there. One answer with one owner, so the window's panels do not
+  spell the same path two ways. A value written here and nowhere there still
+  governs.
+
 ## [0.4.25] - 2026-09-14
 
 ### Added

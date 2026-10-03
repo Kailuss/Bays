@@ -8,7 +8,7 @@ import { applyRender } from './render';
 import { initDragDrop, dragInFlight, onDragEnd } from './dragdrop';
 import { nameClassFor, stateSlot } from './rows';
 import { setTipDelay, hideOrphanedTip } from './tooltip';
-import { truncatePathsIn } from './pathTruncation';
+import { setPathSeparator, truncateAllPaths, truncatePathsIn } from './pathTruncation';
 import { ICONS } from '../shared/icons';
 
 // Emisor tipado: cada mensaje saliente debe ser un WebviewToHostMessage
@@ -212,6 +212,10 @@ function paint(msg: RenderMessage): void {
   // La clase la escribe quien contesta la pregunta, y así las hojas la leen en
   // un solo sitio en vez de que cada una consulte su propio ajuste.
   document.body.classList.toggle('no-motion', !msg.motion);
+  // The sign every path is written with. A move re-cuts them ALL and not only
+  // what the reconciliation touched: each one is joined with it, so each one
+  // measures differently now.
+  const resigned = setPathSeparator(msg.pathSeparator);
 
   const { touched, built } = applyRender(msg.sections, msg.icons, {
     compact : msg.compact,
@@ -227,7 +231,7 @@ function paint(msg: RenderMessage): void {
   // Only what is NEW: a block the reconciliation left alone is still cut to the
   // width it still has. The render saying so is what a `MutationObserver` over
   // the document cannot, which is why there isn't one.
-  truncatePathsIn(built);
+  if (resigned) { truncateAllPaths(); } else { truncatePathsIn(built); }
 }
 
 // Al soltar, se sirve lo que se aplazó.

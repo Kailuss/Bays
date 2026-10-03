@@ -2,7 +2,7 @@
   "name": "bays",
   "displayName": "Editor Bays",
   "description": "%description%",
-  "version": "0.4.25",
+  "version": "0.4.26",
   "publisher": "Lovervoid",
   "license": "MIT",
   "icon": "icon.png",
@@ -386,6 +386,25 @@
           "type": "boolean",
           "default": false,
           "description": "%config.syncCursorPosition%"
+        },
+        "bays.paths.separator": {
+          "type": "string",
+          "enum": ["\\", "/", "›", "•"],
+          "enumItemLabels": [
+            "%config.paths.separator.backslash.label%",
+            "%config.paths.separator.slash.label%",
+            "%config.paths.separator.chevron.label%",
+            "%config.paths.separator.bullet.label%"
+          ],
+          "default": "›",
+          "scope": "window",
+          "description": "%config.paths.separator%"
+        },
+        "bays.paths.separatorSpaced": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "%config.paths.separatorSpaced%"
         },
         "bays.animations": {
           "type": "boolean",

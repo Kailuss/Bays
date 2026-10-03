@@ -210,6 +210,15 @@ export type RenderMessage = {
    */
   hoverDelay: number;
   /**
+   * Which sign goes between two folder names in a row's path. Travels for the
+   * reason `hoverDelay` does: a webview cannot read configuration.
+   *
+   * Composed by the HOST out of the two keys that ask it — this view's own and
+   * Atria's, which governs where that extension is installed — so the client
+   * holds one answer and never a pair to resolve.
+   */
+  pathSeparator: PathSeparator;
+  /**
    * Si la vista se mueve. Funde `bays.animations` con `workbench.reduceMotion`,
    * y cualquiera de los dos la para (ver `utils/settingsRules.ts`).
    */
@@ -347,3 +356,16 @@ export type WebviewToHostMessage =
   | RenameGroupMessage
   | SetGroupColorMessage
   | ToggleGroupLockMessage;
+
+//= HOW A PATH IS WRITTEN
+
+/**
+ * The sign that goes between two folder names in a row's path.
+ *
+ * The vocabulary is Atria's, because that extension owns the question and this
+ * one reads its key where it is installed (see the guide). Two of the four are
+ * typographic, which is what lets this view's own look — a chevron — be said by
+ * the key that governs: with a vocabulary of two, yielding would have cost it.
+ */
+export type PathSeparatorCharacter = '/' | '\\' | '›' | '•';
+export type PathSeparator = PathSeparatorCharacter | ` ${PathSeparatorCharacter} `;

@@ -10,6 +10,7 @@ import { GroupCustomizationService } from './services/ui/GroupCustomizationServi
 import { ViewPrefs               } from './services/ui/ViewPrefs';
 import { ViewConfiguration       } from './services/ui/ViewConfiguration';
 import { ProductIconService      } from './services/ui/ProductIconService';
+import { AtriaService           } from './services/integration/AtriaService';
 import { ThemeService            } from './services/ui/ThemeService';
 import { CopilotService          } from './services/integration/CopilotService';
 import { ClaudeConversationService } from './services/integration/ClaudeConversationService';
@@ -66,6 +67,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const productIcons       = new ProductIconService();
     context.subscriptions.push(productIcons);
 
+    // Cómo se llama la VENTANA en Atria, para titular el panel con ese nombre.
+    // Es lo único que cruza por `exports`: vive en el `workspaceState` de esa
+    // extensión, que es por extensión. Lo demás que las dos comparten son
+    // AJUSTES, y un ajuste se lee sin pedirle nada a nadie.
+    const atriaService       = new AtriaService();
+    context.subscriptions.push(atriaService);
+
     // Initialise icon manager (loads icon map). Do NOT block activation on the
     // theme-JSON disk read: the first render shows placeholder icons and patches
     // real ones in as they resolve, and onDidInitialize triggers a refresh once
@@ -85,6 +93,7 @@ export async function activate(context: vscode.ExtensionContext) {
       groupActions,
       viewConfiguration,
       productIcons,
+      atriaService,
     );
 
     context.subscriptions.push(
