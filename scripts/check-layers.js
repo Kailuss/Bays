@@ -393,15 +393,28 @@ const IDENTIFIER = /[A-Za-z_][A-Za-z0-9_]*/g;
 /**
  * Lo que un tramo entre comillas invertidas NO es: una cita de codigo.
  *
- * Son tres formas y cada una tiene su razon. Una RUTA la comprueba `check-docs`,
- * que es quien sabe resolverla; un NOMBRE DE FICHERO se lee como su nombre mas
- * una extension, y ninguna de las dos mitades es un identificador; y un ATAJO DE
- * TECLADO son teclas. Todo lo demas se mira.
+ * Son cuatro formas y cada una tiene su razon. Una RUTA la comprueba
+ * `check-docs`, que es quien sabe resolverla; un NOMBRE DE FICHERO se lee como
+ * su nombre mas una extension, y ninguna de las dos mitades es un identificador;
+ * un ATAJO DE TECLADO son teclas; y una LINEA —un rotulo de la UI, un trailer de
+ * git, una linea del log— es texto, y un identificador no lleva dos puntos
+ * seguidos de espacio.
+ *
+ * La ultima hace falta porque el escaneo trocea el tramo en vez de medirlo
+ * entero: de `Co-Authored-By: Claude ...` saca `Authored`, que es PascalCase, no
+ * esta en `src/` y no es el nombre de nada. Medido sobre la prosa de este
+ * repositorio, la regla no pierde ni un identificador de verdad: los siete
+ * nombres que deja de mirar son `Editors: Close Editor`, `Extension: <nombre>`,
+ * una linea del log de release y ese trailer, y los que hoy pasan lo hacen por
+ * existir en el corpus por otra via. Cortar por el ESPACIO seria mas ancho y se
+ * llevaria `themeFont`, que si es uno.
  */
 const FILE_EXTENSION = /\.(md|json|jsonl|ts|js|mjs|cjs|css|html|svg|ttf|yml|yaml|vsix|txt|code-workspace)$/;
+const PROSE_LINE = /:\s/;
 
 function isCitation(span) {
-	return !span.includes('/') && !span.includes('+') && !FILE_EXTENSION.test(span);
+	return !span.includes('/') && !span.includes('+')
+		&& !PROSE_LINE.test(span) && !FILE_EXTENSION.test(span);
 }
 
 /**
