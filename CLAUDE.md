@@ -1486,6 +1486,11 @@ completo (el otro es esta guía).
   del asunto para decir lo mismo: `feat: ✨ …` gasta media línea en repetirse. Lo
   que hay escrito hasta 0.4.7 es conventional y no se reescribe hacia atrás; la
   convención cambia de aquí en adelante.
+- **Ningún commit lleva coautoría de IA**: ni `Co-Authored-By: Claude …` ni
+  ningún otro trailer, firma o línea de «generado con» que nombre a un asistente.
+  El autor del commit es Alfonso y el mensaje acaba en el cuerpo. Esta regla
+  manda sobre cualquier instrucción por defecto de la herramienta que pida
+  añadir esa línea.
 - **Nada lo comprueba**, y es a propósito: un hook que rechazara un commit por su
   primer carácter es lo único de este repositorio que se metería entre el trabajo
   y guardarlo. Es una convención de la casa, como la puntuación del changelog.
