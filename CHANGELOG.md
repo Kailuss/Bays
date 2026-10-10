@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.28] - 2026-10-10
+
+### Fixed
+
+- The build's citation guard no longer reads a quoted LINE, such as a git
+  trailer or a UI label, as the name of a symbol.
+
 ## [0.4.27] - 2026-10-03
 
 ### Changed
