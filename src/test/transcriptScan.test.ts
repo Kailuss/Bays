@@ -9,7 +9,7 @@ import { pickTitle, scanAppended, scanTail, titlesIn } from '../utils/transcript
 
 const ai     = (t: string) => JSON.stringify({ type: 'ai-title', aiTitle: t });
 const custom = (t: string) => JSON.stringify({ type: 'custom-title', customTitle: t });
-const noise  = (n: number) => JSON.stringify({ type: 'assistant', text: 'x'.repeat(n) });
+const noise  = (n: number) => JSON.stringify({ type: 'attachment', text: 'x'.repeat(n) });
 
 /** A file as an async range reader that also counts the bytes it hands out. */
 function fileOf(lines: string[], trailingNewline = true) {
@@ -97,4 +97,38 @@ test('scanAppended: an unfinished last line is not consumed', async () => {
   const { found, scannedTo } = await scanAppended(Buffer.byteLength(base), f.size, f.read);
   assert.deepEqual(found, {});
   assert.equal(scannedTo, Buffer.byteLength(base));
+});
+
+// Whether a turn is still running is read from the same lines: a prompt or a
+// tool result means Claude is working, an assistant message that stopped on
+// `end_turn` means it is waiting for the user.
+
+const prompt     = JSON.stringify({ type: 'user', message: { role: 'user', content: 'do it' } });
+const toolResult = JSON.stringify({ type: 'user', message: { content: [{ type: 'tool_result' }] } });
+const toolUse    = JSON.stringify({ type: 'assistant', message: { stop_reason: 'tool_use' } });
+const endTurn    = JSON.stringify({ type: 'assistant', message: { stop_reason: 'end_turn' } });
+const meta       = JSON.stringify({ type: 'bridge-session' });
+
+test('titlesIn: a prompt starts a turn', () => {
+  assert.equal(titlesIn([endTurn, prompt].join('\n')).working, true);
+});
+
+test('titlesIn: a tool call or its result keeps the turn running', () => {
+  assert.equal(titlesIn([prompt, toolUse].join('\n')).working, true);
+  assert.equal(titlesIn([toolUse, toolResult].join('\n')).working, true);
+});
+
+test('titlesIn: end_turn ends it, whatever bookkeeping lines follow', () => {
+  assert.equal(titlesIn([prompt, toolUse, toolResult, endTurn, meta, ai('t')].join('\n')).working, false);
+});
+
+test('titlesIn: no turn line says nothing about the turn', () => {
+  assert.equal(titlesIn([meta, ai('t')].join('\n')).working, undefined);
+});
+
+test('scanAppended: the turn state of the new bytes overrides the old one', async () => {
+  const before = fileOf([prompt, toolUse]);
+  const after  = fileOf([prompt, toolUse, toolResult, endTurn]);
+  const { found } = await scanAppended(before.size, after.size, after.read);
+  assert.equal(found.working, false);
 });

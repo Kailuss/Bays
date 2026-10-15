@@ -21,20 +21,35 @@
  * character into two halves that decode wrong.
  */
 
-/** The newest title of each kind seen in a range; undefined = not in it. */
-export type FoundTitles = { custom?: string; ai?: string };
+/**
+ * The newest title of each kind seen in a range, and whether its newest turn
+ * line says Claude is working; undefined = not in it.
+ */
+export type FoundTitles = { custom?: string; ai?: string; working?: boolean };
 
 /** Hands back the bytes of [start, end). */
 export type RangeReader = (start: number, end: number) => Promise<Uint8Array>;
 
 const NEWLINE = 0x0a;
 
-/** The newest `custom-title` and `ai-title` in a run of JSONL lines. */
+/**
+ * The newest `custom-title` and `ai-title` in a run of JSONL lines, and the turn
+ * state its newest TURN line says: a user line (a prompt, or a tool result fed
+ * back) or an assistant message that has not stopped on `end_turn` mean a turn
+ * is running; one that stopped on `end_turn` means Claude is waiting for the
+ * user. Every other line type is bookkeeping and says nothing about the turn.
+ */
 export function titlesIn(text: string): FoundTitles {
   const found: FoundTitles = {};
   const lines = text.split('\n');
-  for (let i = lines.length - 1; i >= 0 && (found.custom === undefined || found.ai === undefined); i--) {
+  for (let i = lines.length - 1;
+       i >= 0 && (found.custom === undefined || found.ai === undefined || found.working === undefined);
+       i--) {
     const line = lines[i];
+    if (found.working === undefined) {
+      const state = turnStateOf(line);
+      if (state !== undefined) { found.working = state; }
+    }
     // The substring test is the cheap filter: JSON.parse runs only on candidates.
     if (found.custom === undefined && line.includes('"custom-title"')) {
       const obj = parse(line);
@@ -58,7 +73,29 @@ export function pickTitle(found: FoundTitles): string | undefined {
 
 /** `newer` wins kind by kind; what it does not say, `older` still does. */
 export function mergeTitles(newer: FoundTitles, older: FoundTitles): FoundTitles {
-  return { custom: newer.custom ?? older.custom, ai: newer.ai ?? older.ai };
+  return {
+    custom : newer.custom ?? older.custom,
+    ai     : newer.ai ?? older.ai,
+    working: newer.working ?? older.working,
+  };
+}
+
+/**
+ * What one line says about the turn, or undefined when it is not a turn line.
+ * The substring test keeps JSON.parse off the bookkeeping lines, and a
+ * `"type":"user"` quoted inside a string is escaped, so it never matches.
+ */
+function turnStateOf(line: string): boolean | undefined {
+  if (line.includes('"type":"user"')) {
+    return parse(line)?.type === 'user' ? true : undefined;
+  }
+  if (line.includes('"type":"assistant"')) {
+    const obj = parse(line) as { type?: unknown; message?: { stop_reason?: unknown } } | undefined;
+    if (obj?.type !== 'assistant') { return undefined; }
+    // A message with no stop reason yet is still streaming: the turn runs.
+    return obj.message?.stop_reason !== 'end_turn';
+  }
+  return undefined;
 }
 
 /**

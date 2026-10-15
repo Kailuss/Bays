@@ -20,6 +20,17 @@
   font-size: 16px;
 }
 
+/* A chat whose turn is running. It turns whatever `body.no-motion` says: this is
+   not motion added on top of a state, it IS the state, and a stopped spinner
+   would say the chat is idle while it is not. */
+.bay-icon.working .codicon {
+  animation: bays-working-spin 1s linear infinite;
+}
+
+@keyframes bays-working-spin {
+  to { transform: rotate(360deg); }
+}
+
 .bay:not(.variant) .bay-icon img {
   width: 18px;
   height: 18px;

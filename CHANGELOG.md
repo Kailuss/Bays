@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.30] - 2026-10-16
+
+### Added
+
+- A Claude Code chat shows a spinner in place of its icon while Claude is
+  working on a turn.
+
 ## [0.4.29] - 2026-10-15
 
 ### Changed

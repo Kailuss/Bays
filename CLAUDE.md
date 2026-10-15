@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 185 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 190 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1111,6 +1111,28 @@ de los transcripts JSONL de Claude
 vacío sobre el `ai-title`, casando por `startsWith` sobre el prefijo sin los `…`
 y **descartando cualquier empate** — una coincidencia ambigua es ninguna. Un
 `fs.watch` con debounce la vuelve a correr.
+
+**Y de esa misma lectura sale si el chat está TRABAJANDO**: la fila cambia su
+icono por un spinner mientras dura un turno. El transcript lo dice sin adivinar
+nada: la última línea de TURNO —un prompt o un `tool_result` (`user`), o un
+mensaje `assistant`— dice que el turno corre salvo que ese mensaje haya parado en
+`end_turn`. Lo demás (`ai-title`, `attachment`, `bridge-session`…) es
+contabilidad y no dice nada.
+
+- **Solo a través de un título CASADO**: una tab cuyo transcript no se puede
+  nombrar sin ambigüedad no lleva spinner, que es la dirección segura.
+- **Un turno que lleva diez minutos sin escribir no cuenta** (`STALE_TURN_MS`):
+  es una sesión que murió a mitad (ventana cerrada, cuelgue), y un turno vivo
+  escribe muchísimo más a menudo.
+- **Esperar tu permiso para una herramienta se ve como trabajando**: en el
+  transcript es un `tool_use` sin su `tool_result`, igual que una herramienta en
+  marcha.
+- **Y por eso el vigilante pasa de debounce a THROTTLE** (una pasada cada 800 ms
+  como mucho): un turno escribe sin pausa, y un debounce que se reinicia con
+  cada escritura solo disparaba cuando Claude callaba — el spinner habría
+  aparecido con el turno casi terminado.
+- **Copilot no tiene nada equivalente**: no escribe transcripts y VS Code no
+  expone si una petición de chat está en curso.
 
 **Y un transcript se lee UNA vez y después solo por lo que ha crecido**
 (`utils/transcriptScan.ts`, puro y con tests). Es JSONL que solo crece por el

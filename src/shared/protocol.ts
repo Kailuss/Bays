@@ -164,6 +164,12 @@ export type BayView = {
   iconKey   : string;
   active    : boolean;
   pinned    : boolean;
+  /**
+   * A Claude Code chat whose turn is running, read from its transcript: the row
+   * draws a spinner in place of its icon. Absent everywhere else, so no other
+   * row's signature moves.
+   */
+  working?  : boolean;
   groupId   : number;
   state?    : BayStateCode;
   canClose  : boolean;

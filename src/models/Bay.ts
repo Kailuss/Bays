@@ -39,6 +39,10 @@ export type BayIntegrations = {
     inContext: boolean;            // In Copilot chat context
     lastAddedTime?: number;        // When added to context
   };
+  /** A Claude Code chat whose transcript says a turn is running. */
+  claude?: {
+    working: boolean;
+  };
   git?: {
     hasUncommittedChanges: boolean;
     branch?: string;               // Current branch

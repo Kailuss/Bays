@@ -88,6 +88,14 @@ function iconSlot(key: string): HTMLSpanElement {
   return slot;
 }
 
+/** The icon slot of a chat whose turn is running: a spinner where the icon was. */
+function workingSlot(): HTMLSpanElement {
+  const slot = el('span', 'bay-icon working');
+  slot.appendChild(glyph(ICONS.row.working));
+  setTip(slot, t('Claude is working'));
+  return slot;
+}
+
 /** La marca de estado de una fila, o la ranura vacía que la reserva. */
 export function stateSlot(state: BayView['state']): HTMLSpanElement {
   if (!state) { return el('span', 'bay-state clean'); }
@@ -114,7 +122,7 @@ function buildBayRow(bay: BayView, layout: RowLayout): HTMLDivElement {
   // por la que pasa el puntero es ruido y no ayuda.
   setOverflowTip(row, bay.tooltip, '.bay-name');
 
-  row.appendChild(iconSlot(bay.iconKey));
+  row.appendChild(bay.working ? workingSlot() : iconSlot(bay.iconKey));
 
   const text = el('div', 'bay-text');
 

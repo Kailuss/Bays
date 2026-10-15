@@ -34,6 +34,13 @@ const TAIL_CHUNK = 256 * 1024;
 const TAIL_BUDGET = 32 * 1024 * 1024;
 // Cap on transcripts scanned per project dir (newest first) when matching a tab.
 const MAX_TRANSCRIPTS = 24;
+// A transcript whose last turn line says "working" but that has not been written
+// for this long is a session that died mid-turn (a closed window, a crash): a
+// running turn writes far more often than this.
+const STALE_TURN_MS = 10 * 60 * 1000;
+
+/** What one transcript says right now. */
+type TranscriptState = { title: string; working: boolean };
 
 export class ClaudeConversationService {
   private readonly projectsRoot = path.join(os.homedir(), '.claude', 'projects');
@@ -82,9 +89,9 @@ export class ClaudeConversationService {
    * full file when the tail held no title) was a multi-megabyte parse on every
    * pass of the watcher while a turn ran.
    */
-  private async lastTitle(file: string, size: number, mtimeMs: number): Promise<string | undefined> {
+  private async lastFound(file: string, size: number, mtimeMs: number): Promise<FoundTitles | undefined> {
     const prev = this.scans.get(file);
-    if (prev && prev.size === size && prev.mtimeMs === mtimeMs) { return pickTitle(prev.found); }
+    if (prev && prev.size === size && prev.mtimeMs === mtimeMs) { return prev.found; }
 
     let fh: fs.FileHandle | undefined;
     try {
@@ -103,9 +110,9 @@ export class ClaudeConversationService {
       const found = prev && size >= prev.scannedTo ? mergeTitles(scan.found, prev.found) : scan.found;
 
       this.scans.set(file, { found, scannedTo: scan.scannedTo, size, mtimeMs });
-      return pickTitle(found);
+      return found;
     } catch {
-      return prev ? pickTitle(prev.found) : undefined;
+      return prev?.found;
     } finally {
       await fh?.close();
     }
@@ -121,11 +128,12 @@ export class ClaudeConversationService {
    * been in use for a while. Per bay, that is that whole scan multiplied by the
    * open chats, on a path that runs whenever a tab opens or closes.
    *
-   * `lastTitle` reads only what each transcript gained since the last pass, so
+   * `lastFound` reads only what each transcript gained since the last pass, so
    * what a repeat pass costs is the stats and the appended bytes.
    */
-  private async candidateTitles(): Promise<string[]> {
-    const titles: string[] = [];
+  private async candidateTitles(): Promise<TranscriptState[]> {
+    const titles: TranscriptState[] = [];
+    const now = Date.now();
 
     for (const dir of await this.projectDirs()) {
       let files: string[];
@@ -143,8 +151,10 @@ export class ClaudeConversationService {
         if (size < 0) { continue; }
         // The stat above already answered size and mtime: asking again per file
         // was a second round of filesystem calls for the same two numbers.
-        const title = await this.lastTitle(p, size, m);
-        if (title) { titles.push(title); }
+        const found = await this.lastFound(p, size, m);
+        const title = found && pickTitle(found);
+        if (!found || !title) { continue; }
+        titles.push({ title, working: found.working === true && now - m < STALE_TURN_MS });
       }
     }
 
@@ -154,19 +164,33 @@ export class ClaudeConversationService {
   /**
    * Resolves the best display name for each Claude bay (full title when found,
    * else the current native tab label) and mutates `metadata.label` in place.
-   * Returns the ids whose label actually changed, for a partial webview patch.
+   * Returns the ids whose label actually changed, for a partial webview patch,
+   * and the ids whose turn state moved — a spinner on the row, which is a
+   * rebuild of that block.
+   *
+   * The turn state is only claimed through a MATCHED title: a tab whose
+   * transcript cannot be named unambiguously draws no spinner, which is the
+   * safe direction (a spinner on the wrong chat would be a lie).
    *
    * Mutating metadata.label is safe here: a webview bay's identity derives from the
    * stable viewType, never the label (see tabConverter.generateId).
    */
-  async enrichLabels(bays: Bay[]): Promise<string[]> {
+  async enrichLabels(bays: Bay[]): Promise<{ labels: string[]; working: string[] }> {
     const changed: string[] = [];
-    if (bays.length === 0) { return changed; }
+    const turned: string[] = [];
+    if (bays.length === 0) { return { labels: changed, working: turned }; }
 
-    const titles = await this.candidateTitles();
+    const states = await this.candidateTitles();
+    const titles = states.map(s => s.title);
 
     for (const bay of bays) {
       const full   = matchConversationTitle(titles, bay.metadata.label);
+      // The same conversation can span two transcripts: working if either is.
+      const working = full !== undefined && states.some(s => s.title === full && s.working);
+      if ((bay.state.integrations.claude?.working ?? false) !== working) {
+        bay.state.integrations = { ...bay.state.integrations, claude: { working } };
+        turned.push(bay.metadata.id);
+      }
       const native = BayHelpers.findNativeTab(bay.metadata, bay.state)?.label;
       const desired = full ?? native ?? bay.metadata.label;
 
@@ -177,17 +201,25 @@ export class ClaudeConversationService {
         changed.push(bay.metadata.id);
       }
     }
-    return changed;
+    return { labels: changed, working: turned };
   }
 
-  /** Watches the workspace transcript dirs; fires `onChange` (debounced) on any write. */
+  /**
+   * Watches the workspace transcript dirs; fires `onChange` at most every 800 ms
+   * while they are written.
+   *
+   * THROTTLED and not debounced: a running turn writes without pause, and a
+   * debounce that restarts on every write would only fire once Claude goes
+   * quiet — so the spinner would appear when the turn was nearly over. The
+   * trailing pass is what catches the turn ending.
+   */
   watch(onChange: () => void): void {
     void this.projectDirs().then(dirs => {
       if (this.disposed) { return; }
       let timer: NodeJS.Timeout | undefined;
       const fire = () => {
-        if (timer) { clearTimeout(timer); }
-        timer = setTimeout(onChange, 800);
+        if (timer) { return; }
+        timer = setTimeout(() => { timer = undefined; onChange(); }, 800);
       };
       for (const dir of dirs) {
         try {

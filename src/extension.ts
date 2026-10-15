@@ -164,9 +164,10 @@ export async function activate(context: vscode.ExtensionContext) {
           const bays = stateService.getAllBays()
             .filter(b => ClaudeConversationService.isClaudeConversationBay(b));
           if (bays.length > 0) {
-            for (const id of await claudeConversation.enrichLabels(bays)) {
-              stateService.notifyBayLabelChange(id);
-            }
+            const { labels, working } = await claudeConversation.enrichLabels(bays);
+            for (const id of labels) { stateService.notifyBayLabelChange(id); }
+            // A spinner appearing or going is a change of that row's block.
+            if (working.length > 0) { stateService.notifyChange(); }
           }
         } while (enrichAgain);
       } finally {

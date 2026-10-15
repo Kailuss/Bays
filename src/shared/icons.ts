@@ -39,6 +39,12 @@ export const ICONS = {
     close  : 'remove-close',
     /** La X de una variante: la fila es más estrecha y la marca más ligera. */
     closeVariant : 'close',
+    /**
+     * A chat whose turn is running. It takes the ICON's slot and not a badge's:
+     * the row's icon only says what kind of tab this is, which the label says
+     * too, and the slot is where a glance lands first.
+     */
+    working      : 'loading',
   },
 
   /** La cabecera de un grupo de editores. */

@@ -272,6 +272,7 @@ export class BaysHtmlBuilder {
       pathParts : showPath ? bay.metadata.pathParts : undefined,
       tooltip   : bay.metadata.tooltipText || bay.metadata.label,
       iconKey   : this.iconKeyFor(bay, pendingIcons),
+      working   : bay.state.integrations.claude?.working || undefined,
       active    : bay.state.isActive,
       pinned    : bay.state.isPinned,
       groupId   : bay.state.groupId,
