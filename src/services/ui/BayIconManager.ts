@@ -11,6 +11,7 @@ import { parseFontDecls, fontFaceBlock, fontMimeType } from '../../utils/themeFo
 import { asRecord, asString, iconIdEntries, iconDefinition, iconDefinitionIds } from '../../utils/iconTheme';
 import type { IconThemeJson } from '../../utils/iconTheme';
 import type { FontDecl } from '../../utils/themeFonts';
+import { singleFlight } from '../../utils/singleFlight';
 
 /**
  * Una fuente del icon theme con su ruta ya RESUELTA contra el directorio del
@@ -37,6 +38,13 @@ export class BayIconManager {
   private _isPreloadingIcons : boolean = false;
   private _configListener    : vscode.Disposable | undefined;
   private _initPromise       : Promise<void> | undefined;
+  /**
+   * ONE build at a time, shared: the first render asks for the map once per
+   * icon that missed the cache, all before the first build lands, and each ask
+   * used to start its own read and parse of the theme JSON (six at startup).
+   */
+  private readonly _mapBuild   = singleFlight(isCurrent => this.doBuildIconMap(isCurrent));
+  private _forceNextBuild      = false;
   private _onDidInitialize   = new vscode.EventEmitter<void>();
   
   /** Evento que se dispara cuando el mapa de iconos está listo */
@@ -77,17 +85,31 @@ export class BayIconManager {
    * para un nombre o extensión según el tema activo. No carga los iconos
    * en base64 aquí; solo analiza el JSON del tema.
    */
-  public async buildIconMap(
+  public buildIconMap(
     _context: vscode.ExtensionContext,
     forceRebuild: boolean = false
   ): Promise<void> {
+    // A forced build (a theme change) never joins the one in flight, which is
+    // reading the theme that was just replaced.
+    if (forceRebuild) { this._forceNextBuild = true; }
+    return this._mapBuild.run({ force: forceRebuild });
+  }
+
+  /**
+   * The build itself. `isCurrent` turns false when a forced build overtook this
+   * one, and then nothing of what it read is written: it would be the previous
+   * theme's map landing over the new one.
+   */
+  private async doBuildIconMap(isCurrent: () => boolean): Promise<void> {
+    const forceRebuild = this._forceNextBuild;
+    this._forceNextBuild = false;
     try {
       const config    = vscode.workspace.getConfiguration();
       const iconTheme = config.get<string>('workbench.iconTheme');
 
       // Si no hay tema de iconos configurado, limpiar el mapa y salir.
       if (!iconTheme) {
-        this.clearThemeState('');
+        if (isCurrent()) { this.clearThemeState(''); }
         return;
       }
 
@@ -110,7 +132,7 @@ export class BayIconManager {
 
         if (!ext) {
           Logger.warn('[Bays] No icon theme found (not even vs-seti)');
-          this.clearThemeState(iconTheme);
+          if (isCurrent()) { this.clearThemeState(iconTheme); }
           return;
         }
       }
@@ -128,7 +150,7 @@ export class BayIconManager {
       const contributionPath  = asString(themeContribution?.path);
       if (!contributionPath) {
         Logger.warn('[Bays] Theme contribution not found in extension');
-        this.clearThemeState(iconTheme);
+        if (isCurrent()) { this.clearThemeState(iconTheme); }
         return;
       }
 
@@ -140,7 +162,7 @@ export class BayIconManager {
         await fsp.access(themePath);
       } catch {
         Logger.warn('[Bays] Theme file not accessible: ' + themePath);
-        this.clearThemeState(iconTheme);
+        if (isCurrent()) { this.clearThemeState(iconTheme); }
         return;
       }
 
@@ -149,9 +171,12 @@ export class BayIconManager {
         themeJson          = JSON.parse(themeContent) as IconThemeJson;
       } catch (err) {
         Logger.error('[Bays] Error parsing icon theme JSON:', err);
-        this.clearThemeState(iconTheme);
+        if (isCurrent()) { this.clearThemeState(iconTheme); }
         return;
       }
+
+      // Everything above awaited the disk: a forced build may have started since.
+      if (!isCurrent()) { return; }
 
       this._iconThemeId = iconTheme;
       this._iconThemePath = themePath;
@@ -188,7 +213,7 @@ export class BayIconManager {
       this._iconMap = iconMap;
     } catch (error) {
       Logger.error('[Bays] Error building icon map:', error);
-      this._iconMap = this._iconMap || {};
+      if (isCurrent()) { this._iconMap = this._iconMap || {}; }
     }
   }
 

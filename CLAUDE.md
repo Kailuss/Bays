@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 177 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 182 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1151,6 +1151,12 @@ se puede adjuntar.
 - Un tema **basado en fuente** (Seti) se sirve por un marcador
   `font-icon:CHAR:COLOR` en vez de por un data URI.
 - Un SVG con **ruta relativa** se resuelve contra el directorio del tema.
+- **El mapa del tema se construye UNA vez aunque se pida muchas**
+  (`_mapBuild`, sobre `utils/singleFlight.ts`, puro y con tests): el primer render
+  pide un icono por fila que falló la caché, todos antes de que aterrice la
+  primera construcción, y cada uno lanzaba la suya — seis lecturas y parseos del
+  JSON del tema al arrancar, medidos en la traza. Un cambio de tema FUERZA una
+  nueva y la que estaba en vuelo, que leía el tema viejo, no escribe nada.
 - Un **cambio de tema** reconstruye el mapa, con su propio debounce
   (`ICON_THEME_CHANGE_DEBOUNCE`, 100 ms).
 - Los iconos de las pestañas de otras extensiones resuelven al **logo real de la
