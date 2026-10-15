@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 161 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 171 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1077,8 +1077,27 @@ VS Code solo expone la etiqueta TRUNCADA de una pestaña de Claude
 de los transcripts JSONL de Claude
 (`~/.claude/projects/<slug>/<sessionId>.jsonl`), prefiriendo un `custom-title` no
 vacío sobre el `ai-title`, casando por `startsWith` sobre el prefijo sin los `…`
-y **descartando cualquier empate** — una coincidencia ambigua es ninguna. Cachea
-por mtime y un `fs.watch` con debounce la vuelve a correr.
+y **descartando cualquier empate** — una coincidencia ambigua es ninguna. Un
+`fs.watch` con debounce la vuelve a correr.
+
+**Y un transcript se lee UNA vez y después solo por lo que ha crecido**
+(`utils/transcriptScan.ts`, puro y con tests). Es JSONL que solo crece por el
+final, y crece todo el rato que Claude trabaja, con salidas de herramienta
+enteras: medido, hay tramos de 13 MB sin una sola línea de título en un
+transcript de 80 MB. La lectura vieja tomaba una cola de 256 KB y, sin título en
+ella, el fichero ENTERO — así que a mitad de un turno largo cada pasada del
+vigilante parseaba el transcript completo en el hilo del extension host (283 ms y
+~55 MB de buffer por pasada, medido sobre ese fichero). Ahora:
+
+- **la primera lectura** camina hacia atrás desde el final por trozos y para en
+  el trozo que tiene un título, bajo un tope de bytes;
+- **las siguientes** leen solo los bytes añadidos (1,2 ms por pasada con 64 KB
+  nuevos): el título más reciente o está en ellos o es el que ya se sabía;
+- **las líneas se cortan por el BYTE de salto de línea** y nunca sobre texto
+  decodificado: un `0x0A` no aparece dentro de una secuencia UTF-8, así que el
+  borde de un trozo no puede partir un carácter;
+- y la última línea a medio escribir no se consume: la siguiente pasada la lee
+  entera.
 
 **Y la rama genérica de «cambió la etiqueta de un webview» EXCLUYE estas
 pestañas.** Sin esa exclusión, el camino genérico sobreescribiría el título

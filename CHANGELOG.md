@@ -25,6 +25,8 @@ channel; even ones are stable releases.
   every change instead of being patched event by event.
 - A diff whose file the panel opened for it no longer stops showing its git,
   dirty and problem state.
+- A long Claude Code turn no longer slows the window down: the panel reads only
+  what each conversation transcript gained, instead of the whole file.
 
 ## [0.4.28] - 2026-10-10
 

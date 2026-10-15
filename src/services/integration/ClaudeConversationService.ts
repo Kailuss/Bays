@@ -7,6 +7,7 @@ import { Bay } from '../../models/Bay';
 import { BayHelpers } from '../../models/BayHelpers';
 import { Logger } from '../../platform/logger';
 import { matchConversationTitle } from '../../utils/claudeTitles';
+import { mergeTitles, pickTitle, scanAppended, scanTail, type FoundTitles, type RangeReader } from '../../utils/transcriptScan';
 
 /**
  * Reads Claude Code's conversation title from its on-disk transcripts and uses it
@@ -26,15 +27,20 @@ import { matchConversationTitle } from '../../utils/claudeTitles';
 
 // Lowercased substring of the chat panel's viewType (`mainThreadWebview-claudeVSCodePanel`).
 const CLAUDE_PANEL_VIEWTYPE = 'claudevscodepanel';
-// How much of the transcript tail to scan for the last ai-title before a full read.
-const TAIL_BYTES = 256 * 1024;
+// The first read of a transcript walks back from its end this much at a time…
+const TAIL_CHUNK = 256 * 1024;
+// …and gives up past this: a title farther back than that is not worth a read
+// this large, and the tab keeps its native label until a new title is written.
+const TAIL_BUDGET = 32 * 1024 * 1024;
 // Cap on transcripts scanned per project dir (newest first) when matching a tab.
 const MAX_TRANSCRIPTS = 24;
 
 export class ClaudeConversationService {
   private readonly projectsRoot = path.join(os.homedir(), '.claude', 'projects');
-  // transcript path → { title, mtimeMs } — invalidated when the file's mtime moves.
-  private readonly titleCache = new Map<string, { title: string; mtimeMs: number }>();
+  // transcript path → the newest titles in it and how far it has been read.
+  // A transcript only grows at its end, so a later pass reads the appended bytes
+  // and nothing else (`utils/transcriptScan.ts`).
+  private readonly scans = new Map<string, { found: FoundTitles; scannedTo: number; size: number; mtimeMs: number }>();
   private watchers: fssync.FSWatcher[] = [];
   private disposed = false;
 
@@ -69,70 +75,37 @@ export class ClaudeConversationService {
     return dirs;
   }
 
-  /** Last `ai-title` in a transcript, cached by mtime. Reads only the tail first. */
-  private async lastTitle(file: string): Promise<string | undefined> {
-    let stat: fssync.Stats;
-    try { stat = await fs.stat(file); }
-    catch { return undefined; }
-
-    const cached = this.titleCache.get(file);
-    if (cached && cached.mtimeMs === stat.mtimeMs) { return cached.title; }
-
-    const title = await this.scanTitle(file, stat.size);
-    if (title !== undefined) { this.titleCache.set(file, { title, mtimeMs: stat.mtimeMs }); }
-    return title;
-  }
-
-  private async scanTitle(file: string, size: number): Promise<string | undefined> {
-    // Title lines are emitted frequently, so the current title is almost always in
-    // the tail; only fall back to a full read if the tail doesn't contain one.
-    const fromTail = await this.readTitle(file, Math.max(0, size - TAIL_BYTES), size, size > TAIL_BYTES);
-    if (fromTail !== undefined) { return fromTail; }
-    if (size <= TAIL_BYTES) { return undefined; }
-    return this.readTitle(file, 0, size, false);
-  }
-
   /**
-   * Most recent conversation title in a transcript range. Claude's tab title is the
-   * user's `custom-title` when set, otherwise the auto-generated `ai-title` — so a
-   * non-empty custom title wins. Scans from the end for the newest of each type.
+   * The title a transcript shows now. The first read walks back from the end;
+   * every later one reads only what was appended since — the file grows the
+   * whole time Claude works, by whole tool outputs, so re-reading a tail (and a
+   * full file when the tail held no title) was a multi-megabyte parse on every
+   * pass of the watcher while a turn ran.
    */
-  private async readTitle(file: string, start: number, end: number, dropPartialFirstLine: boolean): Promise<string | undefined> {
+  private async lastTitle(file: string, size: number, mtimeMs: number): Promise<string | undefined> {
+    const prev = this.scans.get(file);
+    if (prev && prev.size === size && prev.mtimeMs === mtimeMs) { return pickTitle(prev.found); }
+
     let fh: fs.FileHandle | undefined;
     try {
       fh = await fs.open(file, 'r');
-      const len = end - start;
-      if (len <= 0) { return undefined; }
-      const buf = Buffer.alloc(len);
-      await fh.read(buf, 0, len, start);
-      let text = buf.toString('utf8');
-      if (dropPartialFirstLine) {
-        const nl = text.indexOf('\n');
-        if (nl >= 0) { text = text.slice(nl + 1); }
-      }
-      const lines = text.split('\n');
-      let custom: string | undefined;
-      let ai: string | undefined;
-      for (let i = lines.length - 1; i >= 0 && (custom === undefined || ai === undefined); i--) {
-        const line = lines[i];
-        if (custom === undefined && line.includes('"custom-title"')) {
-          try {
-            const obj = JSON.parse(line);
-            if (obj?.type === 'custom-title' && typeof obj.customTitle === 'string') { custom = obj.customTitle; }
-          } catch { /* partial line */ }
-        } else if (ai === undefined && line.includes('"ai-title"')) {
-          try {
-            const obj = JSON.parse(line);
-            if (obj?.type === 'ai-title' && typeof obj.aiTitle === 'string') { ai = obj.aiTitle; }
-          } catch { /* partial line */ }
-        }
-      }
-      // A non-empty custom title overrides the ai one; a cleared (empty) custom
-      // title falls back to ai. undefined means "not in this range".
-      const title = custom && custom.trim() ? custom : ai;
-      return title || undefined;
+      const handle = fh;
+      const read: RangeReader = async (start, end) => {
+        const buf = Buffer.alloc(end - start);
+        const { bytesRead } = await handle.read(buf, 0, buf.length, start);
+        return buf.subarray(0, bytesRead);
+      };
+
+      // A file that shrank was rewritten, not appended to: read it afresh.
+      const scan = prev && size >= prev.scannedTo
+        ? await scanAppended(prev.scannedTo, size, read)
+        : await scanTail(size, read, { chunk: TAIL_CHUNK, maxBytes: TAIL_BUDGET });
+      const found = prev && size >= prev.scannedTo ? mergeTitles(scan.found, prev.found) : scan.found;
+
+      this.scans.set(file, { found, scannedTo: scan.scannedTo, size, mtimeMs });
+      return pickTitle(found);
     } catch {
-      return undefined;
+      return prev ? pickTitle(prev.found) : undefined;
     } finally {
       await fh?.close();
     }
@@ -148,7 +121,8 @@ export class ClaudeConversationService {
    * been in use for a while. Per bay, that is that whole scan multiplied by the
    * open chats, on a path that runs whenever a tab opens or closes.
    *
-   * `lastTitle` is cached by mtime, so what a repeat pass costs is the stats.
+   * `lastTitle` reads only what each transcript gained since the last pass, so
+   * what a repeat pass costs is the stats and the appended bytes.
    */
   private async candidateTitles(): Promise<string[]> {
     const titles: string[] = [];
@@ -160,13 +134,16 @@ export class ClaudeConversationService {
 
       const stated = await Promise.all(files.map(async f => {
         const p = path.join(dir, f);
-        try { return { p, m: (await fs.stat(p)).mtimeMs }; }
-        catch { return { p, m: 0 }; }
+        try { const st = await fs.stat(p); return { p, m: st.mtimeMs, size: st.size }; }
+        catch { return { p, m: 0, size: -1 }; }
       }));
       stated.sort((a, b) => b.m - a.m);
 
-      for (const { p } of stated.slice(0, MAX_TRANSCRIPTS)) {
-        const title = await this.lastTitle(p);
+      for (const { p, m, size } of stated.slice(0, MAX_TRANSCRIPTS)) {
+        if (size < 0) { continue; }
+        // The stat above already answered size and mtime: asking again per file
+        // was a second round of filesystem calls for the same two numbers.
+        const title = await this.lastTitle(p, size, m);
         if (title) { titles.push(title); }
       }
     }
