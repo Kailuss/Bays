@@ -19,7 +19,7 @@
    - Iconos: 22px/16px vs 14px/13px (container/fontSize)
    - Botones: 20px vs 16px
    - Padding: 0 8px 0 4px vs 0 11px 0 32px (indentación)
-   - Hover: Sin cambio de fondo vs fondo sutil
+   - Hover y activa: el fondo lo lleva el BLOQUE entero (bay + variantes)
 */
 
 /* Note: File icons are provided by VS Code's icon theme API */

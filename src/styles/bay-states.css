@@ -4,24 +4,21 @@
    rows is the active tab: the bay, or one of its variants. A block is one entry
    — a variant is a diff, a snapshot or a preview OF the row above it — so
    activating a diff lights the whole block, exactly as activating the file
-   does, and no row of it takes a shade of its own. It used to be the head row's
-   surface alone, so a variant being the active tab left the block unlit with
-   nothing but a name in another colour to say the editor was in it; and before
-   that the variant wore a selection surface of its own, which lit two rows in
-   two colours for one thing. Written on the rows and not on `.bay-block` so that
-   the drag marks, which paint the block, keep landing where they did.
+   does, and no row of it takes a shade of its own.
+
+   Painted on the BLOCK, inset and rounded (`variants.css`), so the surface is
+   one shape over the bay and every variant under it with no seam between them.
+   The drag marks paint the block too, and they win over this one while a drag
+   runs (below): a drop target is the only thing worth reading then.
 
    What says WHICH row you are in is the NAME, below; what says which file the
    diff belongs to is that the parent's name keeps a selected row's weight
    (`variants.css`).
 
    No row heads a block without being a bay: a variant whose parent is not in
-   the list is drawn AS a bay (`BaysHtmlBuilder`), so the rule above covers it.
-
-   The active bay carried a `border-left-color` too, and it drew nothing: no
-   sheet gives `.bay` a border width, so there was no bar there to colour. */
-.bay-block:has(> .bay.active) > .bay {
-  background: var(--vscode-bay-activeBackground, var(--vscode-editor-background));
+   the list is drawn AS a bay (`BaysHtmlBuilder`), so the rule above covers it. */
+.bay-block:has(> .bay.active) {
+  background: var(--bays-block-active);
 }
 
 .bay.active {
@@ -63,7 +60,10 @@
   pointer-events: none;
   opacity: 0.92;
   box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-  border-radius: 4px;
+  /* The clone is placed by its rect, which is the inset block's, so it needs
+     none of the margin that put it there — and takes the same curve. */
+  margin: 0;
+  border-radius: var(--bays-card-radius);
   will-change: transform;
   transition: none;
   transform: scale(0.9);
@@ -127,7 +127,10 @@ body.drag-active .group-header {
   outline-offset: -1px;
 }
 
-.bay-block.drag-target-group {
+/* Scoped under the drag so it outweighs the ACTIVE surface, whose `:has()`
+   would otherwise keep the open file's block in its own tone inside a group
+   that is being offered as the drop. */
+body.drag-active .bay-block.drag-target-group {
   background: var(--vscode-list-dropBackground, rgba(0,122,204,0.12));
   transition: background 120ms ease-out;
 }

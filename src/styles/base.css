@@ -27,18 +27,26 @@
      so the state mark steps aside instead of vanishing under the pointer. */
   --bays-row-action-ms: 120ms;
 
-  /* === The rule between two rows =========================================
+  /* === The surface of a block ===========================================
 
-     Its colour and how far each end fades out. The fade reaches well into the
-     line rather than nicking its tips: what the rule has to say is where a row
-     ends, which is said in the MIDDLE, and a fade that only clips the last few
-     pixels reads as a line that was cut rather than one that runs out.
+     A block (a bay and its variants) wears a SURFACE under the pointer and while
+     any of its rows is the active tab, and nothing else draws its edges: there
+     is no rule between two rows. The surface is inset to the same column as the
+     group header's card (`--bays-card-gap`) and takes that card's curve, so the
+     list reads as one family of shapes hung from the same two edges.
 
-     There is no dash length any more. A broken rule was what ran between a bay
-     and the first of its variants, and a block carries no rule inside it at
-     all now — see `.bay:not(:last-child)` in `bay-layout.css`. */
-  --bays-rule: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-panel-border, rgba(128,128,128,0.35)));
-  --bays-rule-fade: 32px;
+     The gap between two blocks is what keeps two lit surfaces apart — the
+     hovered one and the active one under it — and it is the ONLY space between
+     rows: inside a block there is none, so a bay and its variants light as one
+     shape. Two pixels, which is enough to see the seam and not enough to read
+     the list as a stack of separate cards.
+
+     The two tones are the list's own: what the workbench paints under a hovered
+     row, and under a selected row of a list that does not hold the keyboard —
+     the active tab is a selection, and the keyboard is elsewhere. */
+  --bays-block-gap: 2px;
+  --bays-block-hover: var(--vscode-list-hoverBackground, rgba(128,128,128,0.12));
+  --bays-block-active: var(--vscode-list-inactiveSelectionBackground, rgba(128,128,128,0.22));
 
   /* === The colours a row writes its state in =============================
 

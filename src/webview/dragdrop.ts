@@ -55,7 +55,8 @@ let originalOrder: SiblingSlot[] = [];    // rect.top y altura de cada sibling a
 let currentInsertIndex = -1;    // índice de inserción actual (en siblings)
 let sourceIndex        = -1;    // índice original del bloque arrastrado
 let tabGroupId: string | undefined = undefined; // grupo de origen (string, del dataset)
-let blockHeight        = 0;     // Alto total del bloque (parent + children automático)
+let blockHeight      = 0;     // Alto total del bloque (parent + children automático)
+let blockStep        = 0;     // Lo que se desplaza un vecino: el alto más el hueco entre bloques
 
 // Cross-group: regiones verticales de cada grupo y grupo bajo el cursor.
 let groupRegions: GroupRegion[] = [];          // al iniciar el drag
@@ -182,17 +183,18 @@ function beginDrag(): void {
 
   const rect = sourceEl.getBoundingClientRect();
 
-  // blockHeight = alto real del bloque completo (parent + todos sus children)
-  // getBoundingClientRect() ya lo calcula porque .bay-block los contiene.
-  //
-  // And NOTHING is added to it. Blocks sit flush — `#bays` lays them out with no
-  // gap and a block carries no margin of its own — so the distance between two
-  // adjacent block tops IS this height, and that is the distance every displaced
-  // sibling is shifted by. The `+ 1` that used to be here was paying for a
-  // border that a rect already includes, so each shifted row landed a pixel past
-  // its slot: a list that settles a hair off true while the drag is still in the
+  // blockStep = how far a displaced sibling moves: the dragged block's own
+  // height (parent + every variant, which the rect already holds because the
+  // block contains them) plus the GAP that separates two blocks. The gap is
+  // read off the box that lays them out (`.group-rows`, a flex column with a
+  // `gap`) and never restated here, so the sheet moving it moves this with it:
+  // a step that left it out would land each shifted row that many pixels short
+  // of its slot, a list settling a hair off true while the drag is still in the
   // air, which is exactly the kind of thing nothing reports.
-  blockHeight = Math.round(rect.height);
+  const parent = sourceEl.parentElement;
+  const gap    = parent ? parseFloat(getComputedStyle(parent).rowGap) || 0 : 0;
+  blockHeight  = Math.round(rect.height);
+  blockStep    = Math.round(rect.height + gap);
 
   // Regiones verticales de cada grupo (para detectar arrastre entre grupos).
   // Sin cabeceras (un solo grupo visible) queda vacío ⇒ sólo reordenación local.
@@ -249,8 +251,8 @@ function updateSiblingPositions(cloneCenter: number): void {
     const origLogical = (i < sourceIndex) ? i : i + 1;
     let   shift       = 0;
 
-    if      (origLogical < sourceIndex && i >= currentInsertIndex) { shift =  blockHeight; }
-    else if (origLogical > sourceIndex && i <  currentInsertIndex) { shift = -blockHeight; }
+    if      (origLogical < sourceIndex && i >= currentInsertIndex) { shift =  blockStep; }
+    else if (origLogical > sourceIndex && i <  currentInsertIndex) { shift = -blockStep; }
 
     s.el.style.transform = shift ? ('translateY(' + shift + 'px)') : '';
   }
@@ -314,7 +316,7 @@ function commitDrop(): void {
     } satisfies DropBayMessage);
 
     // Animar el clon hasta su slot como puente visual
-    const finalDy = (currentInsertIndex - sourceIndex) * blockHeight;
+    const finalDy = (currentInsertIndex - sourceIndex) * blockStep;
     cloneEl.style.transition = 'transform 150ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 150ms ease-out';
     cloneEl.style.transform  = 'translateY(' + finalDy + 'px)';
     cloneEl.style.opacity    = '0';
@@ -487,6 +489,7 @@ function teardown(): void {
   currentInsertIndex = -1;
   sourceIndex        = -1;
   blockHeight        = 0;
+  blockStep          = 0;
   groupRegions       = [];
   targetGroupId      = null;
   lockedSource       = false;

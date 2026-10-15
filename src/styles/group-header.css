@@ -42,11 +42,12 @@
      ICON, and the two are different sizes, so it is their CENTRES that have to
      meet — aligning left edges would leave the smaller one looking indented. A
      row's icon slot starts at its own 8px of padding and is 22 wide, so that
-     centre is at 19; the mark is 14, so half of it is 7; and this strip is
-     already inset by its own margin. Spelled as the arithmetic rather than as
-     the 6px it comes to, so that moving any of the three moves the mark with
-     them instead of silently off the column. */
-  padding-left: calc(8px + 11px - 7px - var(--bays-card-gap));
+     centre is at 19; the mark is 14, so half of it is 7. The card's margin does
+     not enter it: a block is inset by that same margin (`variants.css`), so the
+     two start from one edge. Spelled as the arithmetic rather than as the 12px
+     it comes to, so that moving any of the three moves the mark with them
+     instead of silently off the column. */
+  padding-left: calc(8px + 11px - 7px);
   /* The BOTTOM corners are square: an open header is a frame that opens onto the
      rows it names, so it rounds only the edge that faces away from them and the
      two read as one shape without a line between them to say so — which there
@@ -153,11 +154,36 @@
    own: a concertina, every row clipped through its middle, instead of a group
    rolling up from the bottom.
 
-   It wears NOTHING. A plain block box, so the list lays out exactly as it did
-   when the rows hung off #bays. And it earns two things on the way: the fold
-   stops being written row by row — it is a class on the box, so a bay born
-   inside a folded group is born hidden — and "the last row of a group" becomes
-   :last-child, where it used to be the one with a header behind it. */
+   It wears no surface, but it does hold the RHYTHM of the list: the gap between
+   two blocks is a `gap` here and never a margin on a block, which is what keeps
+   it BETWEEN blocks only — none above the first, none below the last — so the
+   space a group opens with and closes on is the header card's own, and the drag
+   reads the step off this box (`dragdrop.ts`). And it earns one thing more: the
+   fold stops being written row by row — it is a class on the box, so a bay born
+   inside a folded group is born hidden. */
+.group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bays-block-gap);
+}
+
+/* The two ends of the LIST, where there is no header card to hold the space. A
+   single populated group has no header at all, so its first block would sit on
+   the view's top border; and the last group's rows would run to the panel's
+   bottom edge. Each takes the card's gap, the same space a header leaves, so a
+   surface is never flush against an edge whichever shape the list has.
+
+   On the box that ends the list and only there, and only with rows in it: a
+   folded last group is `display: none`, and then what closes the list is its
+   header's own margin. */
+#bays > .group-rows:first-child:not(:empty) {
+  padding-top: var(--bays-card-gap);
+}
+
+#bays > .group-rows:last-child:not(:empty) {
+  padding-bottom: var(--bays-card-gap);
+}
+
 .group-rows.collapsed {
   display: none;
 }
@@ -179,7 +205,7 @@
    display: none there would be nothing left to animate. Spelled with both
    classes rather than leaning on which rule is read last. */
 .group-rows.collapsed.folding {
-  display: block;
+  display: flex;
 }
 
 /* === The bands that close it ===============================================

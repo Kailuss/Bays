@@ -6,6 +6,27 @@
    de forma natural con getBoundingClientRect() sobre este elemento. */
 .bay-block {
   position: relative;
+  /* Inset to the header card's column, so the surface it lights hangs between
+     the same two edges as the card that heads the list, with that card's curve.
+     The row keeps its own 8px inside it, which is what leaves the icon clear of
+     the curve. */
+  margin-inline: var(--bays-card-gap);
+  border-radius: var(--bays-card-radius);
+  /* CLIPPED to its own curve. The band of orders closes a row full bleed against
+     its right edge with square buttons, and a button lit under the pointer at a
+     block's first or last row would lay a square corner over the rounded one.
+     The block hands its curve to whatever reaches it, rows and bands alike.
+     `clip` and not `hidden`: nothing here should ever scroll. */
+  overflow: clip;
+  transition: background-color var(--bays-row-action-ms) ease;
+}
+
+/* The surface: under the pointer, and whenever any of its rows is the active tab
+   — the bay or one of its variants, so the whole block lights as one entry
+   (`bay-states.css` says why). Active wins over hover: the `:has()` weighs more,
+   so pointing at the open file does not turn its surface into a lighter one. */
+.bay-block:hover {
+  background: var(--bays-block-hover);
 }
 
 /* BASE STRUCTURE */
@@ -20,10 +41,9 @@
   /* Text */
   font-size: inherit;
 
-  /* Visual. NO surface of its own: a block wears one and it is the head row's
-     (`bay-states.css`), so a variant is whatever its parent is wearing in every
-     state. A shade of its own was what made a block read as a row with
-     something stuck under it. */
+  /* Visual. NO surface of its own: the BLOCK wears one (`bay-states.css`), so a
+     variant is whatever its parent is wearing in every state. A shade of its own
+     was what made a block read as a row with something stuck under it. */
   padding-left: 36px;
   opacity: 1;
 

@@ -828,26 +828,33 @@ un bloque:
 - **UNA superficie, y se enciende ENTERA en cuanto cualquiera de sus filas es
   la tab activa**: la bay, o una de sus variantes. Activar un diff enciende el
   bloque exactamente como activar el fichero, y ninguna fila toma un tono
-  propio. La escriben las filas y no `.bay-block` —las marcas del arrastre
-  pintan el bloque y tienen que seguir aterrizando donde aterrizaban—, con un
-  solo selector (`.bay-block:has(> .bay.active) > .bay`). Fue la superficie de
-  la fila que ENCABEZA y nada más, así que con un diff activo el bloque se
-  quedaba apagado y solo un nombre de otro color decía que el editor estaba
-  ahí; y antes de eso la variante llevaba una superficie de selección propia,
-  o sea dos filas encendidas de dos colores por una sola cosa.
+  propio. La pinta el BLOQUE, no las filas (`.bay-block:has(> .bay.active)`), y
+  es una pastilla: metida hasta la columna de la tarjeta de la cabecera
+  (`--bays-card-gap`) y con su misma curva. Con el puntero encima toma el tono
+  de hover de la lista; activa, el de una selección sin teclado — la tab activa
+  es una selección y el teclado está en otra parte. La activa gana al hover.
+  - **Recorta a su curva** (`overflow: clip`): la banda de órdenes cierra la
+    fila a sangre con botones cuadrados, y uno encendido en la primera o la
+    última fila del bloque pondría una esquina cuadrada sobre la redonda.
+  - **Las marcas del arrastre ganan durante el gesto**
+    (`body.drag-active .bay-block.drag-target-group`): un destino es lo único
+    que hay que leer entonces.
 - **Lo que dice en CUÁL de las filas estás es el NOMBRE de la activa**, en el
   color activo del tema; lo que dice de qué fichero es el diff es que el padre
   conserva el PESO de su nombre.
-- **Y DENTRO del bloque no hay ninguna raya** (`.bay:not(:last-child)`). Fueron
-  dos formas —discontinua entre la fila y su primera variante, ninguna entre dos
-  variantes— y eso es la misma distinción trazada a medias: una raya rota sigue
-  diciendo que los dos lados son cosas distintas. La última fila del bloque sí
-  lleva la suya, porque ésa no va dentro sino debajo.
+- **No hay NINGUNA raya entre filas**, ni dentro del bloque ni entre dos. Lo que
+  dice dónde acaba una entrada es el hueco entre bloques (`--bays-block-gap`,
+  2px) y la superficie que enciende cada uno; una línea bajo cada fila era un
+  canto dibujado en una lista cuyas entradas ya tienen uno, y peleaba con la
+  superficie por el mismo trabajo. Con ella se fue `--bays-dpr`, que existía
+  solo para que esa línea midiera un píxel de dispositivo.
+- **Los huecos, todos**: entre dos bloques 2px; dentro de un bloque ninguno; de
+  la cabecera al primer bloque y del último a la cabecera siguiente, el margen
+  de la tarjeta; y en los dos extremos de la lista, sin cabecera que lo ponga,
+  ese mismo margen (`#bays > .group-rows:first-child` / `:last-child`).
 
 Con ellas se fue lo último que dibujaba un canto ahí: la **barra de acento** de
-una variante activa, que además costaba una segunda aritmética —se comía 4px de
-la sangría para que el icono no se moviera, y la raya de debajo había que
-retirarla otros 4px para que cayera en la columna de todas las demás.
+una variante activa, que además costaba una segunda aritmética.
 
 ### Los ids
 
@@ -1228,10 +1235,11 @@ ALTO: el grupo se recoge desde abajo en `FOLD_MS`
   lo diga y una bay que nazca dentro de él nace escondida. Lo que
   `applyCollapsedGroups` cubre es la caja NUEVA —el primer render, o un grupo
   que vuelve— que nace abierta y recoge lo que guardó `getState()`.
-- **Y de propina, «la última fila de un grupo» pasa a ser `:last-child`**, donde
-  era la que tenía una cabecera detrás: la regla que le quita la raya de abajo es
-  ahora una y no dos, y el clon del arrastre queda fuera de su alcance por
-  construcción en vez de por un ámbito escrito a mano.
+- **Y de propina lleva el RITMO de la lista**: el hueco entre dos bloques es un
+  `gap` de la caja (`--bays-block-gap`) y nunca un margen del bloque, así que
+  cae solo ENTRE bloques — ni encima del primero ni debajo del último, donde el
+  espacio lo pone la tarjeta de la cabecera. El arrastre lee ese hueco de la
+  caja (`dragdrop.ts`) en vez de repetirlo.
 - **Lo apaga `body.no-motion`**, como todo lo demás que la vista mueve. La
   duración vive en el TypeScript y no en `base.css` porque la lee
   `el.animate`; el interruptor sigue siendo uno solo.
