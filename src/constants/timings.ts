@@ -10,6 +10,10 @@ export const TIMINGS = {
   // Structural changes arrive in bursts and this one answers with disk reads:
   // one window per burst instead of one scan per event.
   CLAUDE_TITLE_DEBOUNCE: 150,
+  // One state rebuild per burst of tab events. Long enough for a file rename
+  // (queued at once) to re-key its bay before the rebuild reads it; short enough
+  // to land within the next frames.
+  RECONCILE_DEBOUNCE: 25,
 
   // Retry delays (ms)
   ACTIVATION_RETRY_DELAY: 50,

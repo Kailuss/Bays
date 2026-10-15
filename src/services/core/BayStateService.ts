@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Bay } from '../../models/Bay';
-import { BayGroup, createTabGroup } from '../../models/BayGroup';
+import { BayGroup } from '../../models/BayGroup';
 import { Logger }       from '../../platform/logger';
 import type { BayHierarchyService } from './BayHierarchyService';
 import type { GroupCustomizationService } from '../ui/GroupCustomizationService';
@@ -15,7 +15,6 @@ import type { GroupCustomizationService } from '../ui/GroupCustomizationService'
 export class BayStateService {
   private bays   : Map<string, Bay>      = new Map();
   private groups : Map<number, BayGroup> = new Map();
-  private _isBulkLoading                     = false;
   private _onDidChangeState                  = new vscode.EventEmitter<void>();
   readonly onDidChangeState                  = this._onDidChangeState.event;
   private _onDidChangeStateSilent            = new vscode.EventEmitter<void>();
@@ -24,6 +23,10 @@ export class BayStateService {
   readonly onDidChangeBayState               = this._onDidChangeBayState.event;
   private _onDidChangeBayLabel               = new vscode.EventEmitter<string>();
   readonly onDidChangeBayLabel               = this._onDidChangeBayLabel.event;
+  // Fires when the last intentional-close marker is dropped: the reconcile waits
+  // out a close Bays itself is driving, and this is what tells it to run.
+  private _onDidSettleCloses                 = new vscode.EventEmitter<void>();
+  readonly onDidSettleCloses                 = this._onDidSettleCloses.event;
 
   // Hierarchy service (injected to avoid circular dependency)
   private hierarchyService?: BayHierarchyService;
@@ -37,7 +40,7 @@ export class BayStateService {
    * Cuando cerramos variants programáticamente, marcamos el ID aquí.
    * - markAsIntentionalClose: incrementa el contador (varios variants pueden marcar el mismo parent)
    * - clearIntentionalClose: decrementa; solo se elimina cuando llega a 0
-   * - isIntentionalClose: true si contador > 0
+   * - hasIntentionalCloses: true mientras quede alguno (el reconcile espera)
    * Esto evita que el primer timeout limpie el marcador antes de que llegue
    * el evento de VS Code del segundo cierre.
    */
@@ -55,10 +58,13 @@ export class BayStateService {
   }
 
   /**
-   * Verifica si un bay ID está marcado como cierre intencional.
+   * True while any close Bays drives itself is still cascading. The reconcile
+   * defers until then: mid-cascade the native tabs briefly lack a parent that is
+   * about to be reopened, and rebuilding from that would drop it and send it to
+   * the end of its group when it comes back.
    */
-  isIntentionalClose(bayId: string): boolean {
-    return (this.intentionalCloses.get(bayId) ?? 0) > 0;
+  hasIntentionalCloses(): boolean {
+    return this.intentionalCloses.size > 0;
   }
 
   /**
@@ -70,6 +76,7 @@ export class BayStateService {
     if (current <= 1) {
       this.intentionalCloses.delete(bayId);
       Logger.log(`[BayState] Cleared intentional close: ${bayId}`);
+      if (this.intentionalCloses.size === 0) { this._onDidSettleCloses.fire(); }
     } else {
       this.intentionalCloses.set(bayId, current - 1);
       Logger.log(`[BayState] Decremented intentional close: ${bayId} (count: ${current - 1})`);
@@ -81,9 +88,7 @@ export class BayStateService {
    * Usado por servicios especializados para disparar actualización de UI.
    */
   notifyChange(): void {
-    if (!this._isBulkLoading) {
-      this._onDidChangeState.fire();
-    }
+    this._onDidChangeState.fire();
   }
 
   /**
@@ -93,9 +98,7 @@ export class BayStateService {
    * reconstruir todo el HTML del webview.
    */
   notifyActiveChange(): void {
-    if (!this._isBulkLoading) {
-      this._onDidChangeStateSilent.fire();
-    }
+    this._onDidChangeStateSilent.fire();
   }
 
   /**
@@ -150,66 +153,9 @@ export class BayStateService {
 
   //- Bay management
 
-  // Add a bay (or update if it already exists in the group).
-  addBay(bay: Bay): void {
-    this.bays.set(bay.metadata.id, bay);
-
-    let group = this.groups.get(bay.state.groupId);
-
-    // Safety net: the bay belongs to a group we don't know yet (e.g. a split
-    // created at runtime). Without this the bay would sit in the map but in no
-    // group, and the render (which iterates groups) would never show it.
-    if (!group) {
-      const native = vscode.window.tabGroups.all.find(g => g.viewColumn === bay.state.groupId);
-      if (native) {
-        group = createTabGroup(native);
-        this.groupCustomization?.apply(group);
-        this.groups.set(group.id, group);
-        Logger.log(`[BayState] Created missing group ${group.id} for bay: ${bay.metadata.label}`);
-      }
-    }
-
-    if (group) {
-      const existsInGroup = group.bays.find(t => t.metadata.id === bay.metadata.id);
-      if (!existsInGroup) {
-        group.bays.push(bay);
-      }
-    }
-
-    if (!this._isBulkLoading) { this._onDidChangeState.fire(); }
-  }
-
-  // Remove a bay by id and clean it from its group.
-  // ✅ NUEVO: Desregistra children del parent si es necesario
-  removeBay(id: string): void {
-    const bay = this.bays.get(id);
-    if (!bay) {
-      return;
-    }
-    
-    // Las variantes se van con su padre, y se PREGUNTA por ellas en vez de leer
-    // una cuenta del padre: la cuenta se quedaba a cero cuando la variante llegó
-    // antes que él, y entonces el cierre lo dejaba solo y el diff seguía en el
-    // estado con un sourceBayId colgando — la fila huérfana bajo la cabecera.
-    // EXCEPCIÓN: las variantes de preview NO se eliminan en cascada — cerrar el
-    // .md no cierra su preview en VS Code, así que la pestaña nativa sigue viva.
-    // Se dejan en el estado y la capa de eventos (BayEventService) dispara un
-    // resync que reabre el source y las re-enlaza: una variante nunca queda
-    // huérfana de forma permanente.
-    if (this.hierarchyService) {
-      for (const child of this.hierarchyService.fetchVariants(id)) {
-        if (child.metadata.diffType === 'preview') { continue; }
-        this.removeBayInternal(child.metadata.id);
-      }
-    }
-
-    this.removeBayInternal(id);
-  }
-
   /**
    * Remueve una bay del estado sin procesar jerarquía.
    * SOLO usar cuando la jerarquía ya fue actualizada manualmente.
-   * Para cierres normales, usar removeBay() que maneja jerarquía automáticamente.
    */
   removeBayFromState(id: string): void {
     this.removeBayInternal(id);
@@ -224,10 +170,9 @@ export class BayStateService {
    * `newBay` must be freshly converted from the post-rename native tab so every derived
    * field (label, path parts, language, git status) is already correct.
    *
-   * Scope: the caller guarantees the bay is a plain file bay (not itself a variant and
-   * with no variants of its own). Variant / parent-with-variant remaps go through a full
-   * resync instead, because their ids and `sourceBayId` links would all have to be
-   * rewired together — beyond what a single in-place swap can do safely.
+   * Scope: a ROOT file bay. Its variants keep pointing at the old id until the
+   * reconcile that always follows a rename recomputes their parent link from the
+   * native tabs — this swap only has to keep the parent in its slot.
    *
    * @returns true if the bay was found and re-keyed; false otherwise (caller should resync).
    */
@@ -316,9 +261,7 @@ export class BayStateService {
    * cambio de id (el id del webview deriva del viewType estable, no del label).
    */
   notifyBayLabelChange(bayId: string): void {
-    if (!this._isBulkLoading) {
-      this._onDidChangeBayLabel.fire(bayId);
-    }
+    this._onDidChangeBayLabel.fire(bayId);
   }
 
   /**
@@ -352,43 +295,32 @@ export class BayStateService {
     return group ? [...group.bays] : [];
   }
 
-  // Replace all bays with a new set (used during full sync).
-  replaceBays(bays: Bay[]): void {
-    this._isBulkLoading = true;
-    this.bays.clear();
-
-    // Clear bays from all groups
-    this.groups.forEach(group => {
-      group.bays = [];
-    });
-
-    bays.forEach(bay => this.addBay(bay));
-    this._isBulkLoading = false;
-    this._onDidChangeState.fire();
-  }
-
-  //- Group management
-
   /**
-   * Reemplaza el conjunto de grupos SIN disparar eventos.
-   * Usado por syncAll/resyncAll: poda grupos obsoletos (columnas renumeradas o
-   * cerradas) y añade los nuevos; el replaceBays posterior ya notifica una vez.
+   * Adopts a whole rebuilt state in one swap, WITHOUT firing anything: the
+   * reconcile knows what actually changed and notifies through the narrowest
+   * channel that says it (a rebuild, a state patch, a label, the active row).
+   *
+   * The groups arrive with their bays already in display order; the map is
+   * derived from them, so the two can never hold different objects for one id.
    */
-  setGroups(groups: BayGroup[]): void {
+  adoptGroups(groups: BayGroup[]): void {
     this.groups.clear();
+    this.bays.clear();
     for (const group of groups) {
       this.groupCustomization?.apply(group);
       this.groups.set(group.id, group);
+      for (const bay of group.bays) { this.bays.set(bay.metadata.id, bay); }
     }
   }
+
+  //- Group management
 
   getGroup(id: number): BayGroup | undefined {
     return this.groups.get(id);
   }
 
-  // Sorted by column and never in insertion order: the safety net in `addBay`
-  // creates a group the moment its first bay arrives, so a split opened at
-  // runtime lands AFTER groups with a higher column and the list read 1 3 2 4.
+  // Sorted by column and never in insertion order: a list that read 1 3 2 4
+  // would put a split opened at runtime after groups with a higher column.
   getGroups(): BayGroup[] {
     return Array.from(this.groups.values()).sort((a, b) => a.viewColumn - b.viewColumn);
   }
@@ -471,5 +403,6 @@ export class BayStateService {
     this._onDidChangeStateSilent.dispose();
     this._onDidChangeBayState.dispose();
     this._onDidChangeBayLabel.dispose();
+    this._onDidSettleCloses.dispose();
   }
 }

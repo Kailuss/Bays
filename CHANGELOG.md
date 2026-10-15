@@ -14,6 +14,17 @@ channel; even ones are stable releases.
 - No rule runs between two bays any more.
 - A hovered bay, and the bay holding the active tab, light a rounded surface
   that covers the bay and every variant under it.
+- Closing a Markdown file no longer reopens it to keep its preview attached:
+  the preview stays as a row of its own.
+
+### Fixed
+
+- A Markdown preview that follows the active editor moves under the file it
+  now shows.
+- The panel no longer drifts from the open tabs: it is rebuilt from them on
+  every change instead of being patched event by event.
+- A diff whose file the panel opened for it no longer stops showing its git,
+  dirty and problem state.
 
 ## [0.4.28] - 2026-10-10
 
