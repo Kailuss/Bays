@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.29] - 2026-10-15
+
+### Changed
+
+- No rule runs between two bays any more.
+- A hovered bay, and the bay holding the active tab, light a rounded surface
+  that covers the bay and every variant under it.
+
 ## [0.4.28] - 2026-10-10
 
 ### Fixed
