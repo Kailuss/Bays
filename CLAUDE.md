@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 144 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 161 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -493,15 +493,17 @@ Es la parte que cruza muchos ficheros. Del lado del host:
    **sin bloquear** (`void …`; su `onDidInitialize` posterior dispara
    `provider.refreshTheme()`, que repinta Y reenvía la fuente del tema), registra
    el provider y llama a `syncService.activate()`.
-2. **`BaySyncService`** es el orquestador fino que mantiene el estado interno de
-   acuerdo con VS Code. Delega en:
+2. **`BaySyncService`** mantiene el estado de acuerdo con VS Code
+   **RECONCILIANDO**, nunca aplicando deltas (ver *El estado se RECONSTRUYE, no se
+   parchea*). Alrededor:
    - **`BayEventService`** — registra los oyentes de VS Code (`onDidChangeTabs`,
      `onDidChangeTabGroups`, `onDidChangeActiveTextEditor`,
-     `onDidChangeTextEditorSelection`, renombrados y borrados de fichero).
+     `onDidChangeTextEditorSelection`, renombrados y borrados de fichero), y casi
+     todos se reducen a pedir una reconciliación.
    - **`ActiveStateService`** — recalcula `isActive` a partir de las pestañas
-     nativas.
-   - **`BayHeadService`** — se asegura de que exista la bay padre antes de añadir
-     una variante.
+     nativas: el camino rápido del resaltado entre dos reconciliaciones.
+   - **`BayHeadService`** — abre el fichero de un diff que el usuario ACABA de
+     abrir con su fichero cerrado. Nada más.
    - **`BayHierarchyService`** — quiénes son las variantes de una bay
      (`fetchVariants`, un recorrido por `sourceBayId`) y la sincronización del
      cursor.
@@ -567,10 +569,60 @@ Los cambios de activo, de sucio y de git/diagnósticos se parchean por su propio
 - **reordenar arrastrando** → el webview mueve el DOM él mismo y el host reordena
   su modelo en silencio, sin reconstruir nada.
 
-**Todos los manejadores de eventos de VS Code que mutan estado** —el `syncAll`
-inicial, `handleTabChanges`, los cambios de grupo, los renombrados y borrados,
-los resyncs— **corren por una sola cola de promesas** (`BaySyncService.enqueue()`).
-Nunca mutes el estado de sincronización fuera de ella.
+**Todo lo que muta el estado de sincronización o abre una tab** —cada
+reconciliación, el re-key de un renombrado, la apertura del padre de un diff—
+**corre por una sola cola de promesas** (`BaySyncService.enqueue()`). Nunca mutes
+ese estado fuera de ella.
+
+### El estado se RECONSTRUYE, no se parchea
+
+Cada evento de tabs pide una reconciliación (`scheduleReconcile`, una por ráfaga:
+`TIMINGS.RECONCILE_DEBOUNCE`), y la reconciliación convierte **todas** las tabs
+nativas otra vez y las funde con lo que hay en pantalla. Es síncrona a propósito:
+sin un `await` en medio, nada puede mover las tabs entre leerlas y adoptarlas
+(`BayStateService.adoptGroups`, un solo cambio sin eventos).
+
+**Fue incremental, y ésa era la fuente de toda la deriva.** Se leía todo al
+arrancar y en un split, y entre medias se aplicaban los deltas de
+`opened`/`closed`/`changed` a mano: cuatro manejadores con `await` en medio, cada
+uno una ocasión de aplicar un cambio a un estado que ya se había movido, y nada
+que corrigiera el resultado hasta el siguiente split. Lo que se veía:
+
+- una previa sin bloquear que seguía al editor activo se quedaba colgando del
+  `.md` anterior — el `changed` actualizaba su etiqueta y nunca su padre;
+- el mapa y el grupo guardando OBJETOS distintos para un mismo id, en cuanto el
+  padre de un diff se añadía dos veces (el repliegue de la apertura y el evento
+  encolado detrás) — y se dibujaba el que ya no recibía actualizaciones;
+- y la vista peleándose con VS Code: reabría el `.md` que el usuario acababa de
+  cerrar para que su previa no se quedara sin padre, y el mismo evento traía el
+  cierre que lo volvía a quitar.
+
+Lo que una reconstrucción NO puede leer de las tabs es lo que posee el PANEL, y
+son las reglas puras de `utils/reconcileRules.ts`, con tests:
+
+- **el orden de cada grupo** (`orderGroup`): lo que ya estaba conserva su sitio,
+  casado por id y si no por uri —un split renumera las columnas y con ellas los
+  ids—; lo nuevo va detrás, en el orden nativo;
+- **cuándo una bay sigue siendo la misma** (`sameShape`): entonces se conserva el
+  OBJETO y solo se copian las banderas nativas, que es lo que mantiene vivo lo que
+  otros servicios escriben encima — la cuenta medida de un diff, el título de
+  Claude, el cursor. La etiqueta de un webview o un terminal no cuenta: se
+  retitulan en caliente, y eso es un parche de etiqueta y no una bay nueva;
+- **qué variantes se han quedado sin padre** (`orphanedVariants`): se degradan a
+  fila raíz.
+
+Y cada cambio sale por el canal más estrecho que lo dice: un cambio de forma, de
+conjunto o de orden es un `notifyChange`; el dirty, git y los diagnósticos, un
+parche de una fila; un retitulado, un parche de etiqueta; el activo, el camino
+silencioso.
+
+- **Un cierre que conduce Bays aplaza la reconciliación** (`hasIntentionalCloses`):
+  a mitad de la cascada las tabs nativas pierden un instante al padre que se va a
+  reabrir, y reconstruir con eso lo mandaría al final de su grupo. Al soltarse el
+  último marcador (`onDidSettleCloses`) corre la que estaba pendiente.
+- **Un renombrado es lo único que las tabs no pueden decir** —qué fichero nuevo
+  ES el viejo—, así que se re-keya la bay en su sitio ANTES de reconstruir; la
+  ventana del debounce es lo que deja llegar primero a ese evento.
 
 ## El invariante: `webview.html` se asigna UNA vez
 
@@ -743,7 +795,7 @@ columna la orden**, nunca el gusto:
   `activeTextEditor` es el último editor de texto que cambió de entrada, viva
   donde viva.
 - **La mitad inversa ya existía** y conviene leerla al lado: cuando la que
-  aparece primero es la VARIANTE, `ensureParentExists` abre el padre **en el
+  aparece primero es la VARIANTE, `openMissingParent` abre el padre **en el
   grupo de la variante**. Las dos reglas dicen lo mismo desde los dos extremos —
   padre e hija en el mismo grupo—, y por eso ninguna necesita mover una tab
   después.
@@ -962,16 +1014,10 @@ que se encuentra y que se activa. De ahí el reintento
 (`ACTIVATION_RETRY_DELAY` 50 ms, `ACTIVATION_MAX_RETRIES` 3) y, como último
 recurso, `vscode.open`.
 
-El caso contrario —que VS Code convierta una preview en permanente— se detecta en
-el bucle `changed` y **se trata en silencio a propósito**: actualiza la bandera
-en el sitio, no marca cambio estructural y no manda ningún `postMessage`, porque
-`isPreview` no se dibuja en ninguna parte y el id no se deriva de ella.
-
-### Los huérfanos se limpian en línea, al cerrar
-
-No hay barrido ni pasada periódica: el bucle `closed` de
-`BayEventService.handleTabChanges()` quita la bay que casa (`removeBay`) cuando
-el cierre no fue intencionado. Es la única vía.
+El caso contrario —que VS Code convierta una preview en permanente— la
+reconciliación lo copia **en silencio a propósito**: actualiza la bandera en el
+sitio y no notifica nada, porque `isPreview` no se dibuja en ninguna parte y el
+id no se deriva de ella.
 
 ### Una pestaña se puede cerrar a mitad de una acción
 
@@ -998,20 +1044,31 @@ conversión normal la recoge en la siguiente sincronización.
 - **El botón desaparece cuando ya hay previa** (`quickActionFor`): crear una
   segunda sería redundante. No hay botón de vuelta — la previa es una fila con su
   propia X.
-- **Y está exenta del borrado en cascada**: cerrar el `.md` fuente **no** cierra
-  la previa en VS Code, así que su bay se deja a propósito en el estado, dibujada
-  como huérfana, en vez de retirarla con su padre.
+- **Se re-engancha en CADA reconciliación**, porque el padre se recalcula al
+  convertir: una previa sin bloquear sigue al editor activo y cambia de etiqueta
+  («Preview a.md» → «Preview b.md»), y con ella de padre. `sameShape` ve el padre
+  distinto y la reconstruye bajo el `.md` nuevo.
+- **Y la vista NUNCA abre el `.md` por su cuenta.** Cerrar el fuente no cierra la
+  previa en VS Code, y abrir la previa con *Open Preview* sustituye a un `.md` en
+  cursiva: en los dos casos la previa se queda sin padre por decisión del usuario,
+  y se dibuja como fila raíz. Lo hizo —reabría el fuente para que la regla de
+  jerarquía se cumpliera— y era la vista peleándose con un cierre que alguien
+  acababa de hacer.
 
 ### Una variante puede aparecer antes que su padre
 
-Abrir un diff con el fichero base cerrado. `BayHeadService.ensureParentExists`
+Abrir un diff con el fichero base cerrado. `BayHeadService.openMissingParent`
 abre el fichero de verdad (`openTextDocument` + `showTextDocument` con
-`preserveFocus`), y `onDidChangeTabs` dispara **síncronamente durante ese await**,
-así que el padre ya está en el estado cuando se comprueba.
+`preserveFocus`) en el grupo del diff, y la reconciliación encolada detrás ve a
+los dos.
 
-**No hay ningún placeholder de «cargando»**: `state.isLoading` existe en el tipo
-pero sale siempre en `false`. Si la apertura falla —un remoto, un permiso, un
-fichero borrado— la variante se añade igual y se dibuja como una fila huérfana.
+- **Solo al ABRIRSE el diff**, y nunca en una reconciliación: es la respuesta a
+  lo que el usuario acaba de pedir. Un padre que el usuario cierra con su diff
+  abierto se queda cerrado, y el diff se dibuja como fila raíz.
+- **Nunca para una previa**: ver arriba.
+- **No hay ningún placeholder de «cargando»**: `state.isLoading` existe en el
+  tipo pero sale siempre en `false`. Si la apertura falla —un remoto, un permiso,
+  un fichero borrado— el diff se dibuja como fila raíz.
 
 ### Claude Code y la pelea por la etiqueta
 
@@ -1265,10 +1322,12 @@ Con `items.length === 0` no se manda nada.
   una ráfaga ejecuta.
 - **Los ids no se cachean** porque no vale la pena: son una concatenación de
   cadenas sobre campos que ya están a mano, así que no hay nada que invalidar.
-- **`replaceBays()` carga en lote**: suprime los eventos de cada `addBay` y
-  dispara uno solo al final. `resyncAll()` además conserva el orden manual de
-  cada grupo a través de la reconstrucción, fotografiándolo por URI antes y
-  reordenando después.
+- **Una reconciliación convierte TODAS las tabs** en cada ráfaga de eventos. Es
+  barato a esta escala —decenas de tabs, y cada conversión son búsquedas en
+  índices que ya están en memoria (git, diagnósticos, el registro de lenguajes)—
+  y lo que compra es que el estado no pueda quedarse desfasado. Un terminal que
+  se retitula mientras imprime paga una por ventana de debounce, y sale como
+  parche de etiqueta, sin reconstruir la lista.
 - **La jerarquía se recalcula entera solo tras una sincronización completa**;
   enganchar y desenganchar una variante es O(1) y solo corre cuando una variante
   se abre o se cierra de verdad.
