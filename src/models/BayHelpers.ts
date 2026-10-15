@@ -121,7 +121,12 @@ export class BayHelpers {
    * lists against the Tab API's count says whether there is another window at
    * all, so a single window pays nothing.
    */
-  static async activateByNativeTab(metadata: BayMetadata, state: BayState): Promise<void> {
+  static async activateByNativeTab(
+    metadata: BayMetadata,
+    state: BayState,
+    /** False once a newer activation started: then this one stops before acting. */
+    isCurrent: () => boolean = () => true,
+  ): Promise<void> {
     const nativeTab = BayHelpers.findNativeTab(metadata, state);
     if (nativeTab) {
       const tabIndex = nativeTab.group.tabs.indexOf(nativeTab);
@@ -129,9 +134,14 @@ export class BayHelpers {
         try {
           Logger.log(`[BayHelper] Activating by index: ${metadata.label}, column: ${state.viewColumn}, index: ${tabIndex}, isPreview: ${nativeTab.isPreview}`);
           const before = await BayHelpers.focusedWindowLayout();
+          // Each await below is a round trip a newer click can overtake: asked
+          // before each step that moves the focus, so a superseded activation
+          // never lands after the one the user clicked last.
+          if (!isCurrent()) { return; }
           await BayHelpers.focusGroup(state.viewColumn);
           if (nativeTab.isActive) { return; }
           await BayHelpers.awaitWindowSwitch(before);
+          if (!isCurrent()) { return; }
           await vscode.commands.executeCommand(VSCODE_COMMANDS.OPEN_EDITOR_AT_INDEX, tabIndex);
           if (!nativeTab.isActive) {
             Logger.warn(`[BayHelper] Index activation did not land: ${metadata.label} (column ${state.viewColumn}, index ${tabIndex})`);
@@ -145,6 +155,7 @@ export class BayHelpers {
       Logger.warn('[BayHelper] Native bay not found for activation: ' + metadata.label);
       throw new Error(`Native bay not found: ${metadata.label}`);
     }
+    if (!isCurrent()) { return; }
     const label = metadata.label.toLowerCase();
     for (const [keyword, cmd] of Object.entries(BayHelpers.WEBVIEW_COMMANDS)) {
       if (label.includes(keyword)) {

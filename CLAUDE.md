@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 182 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 185 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1023,6 +1023,21 @@ Un webview **se activa por índice** (`workbench.action.openEditorAtIndex` tras
 enfocar su grupo), con un repliegue a un comando concreto por etiqueta
 (`BayHelpers.WEBVIEW_COMMANDS`: Settings, Keyboard Shortcuts, Welcome, Release
 Notes, Interactive Playground).
+
+### Dos clics seguidos: gana el ÚLTIMO
+
+Activar una tab espera varios viajes al workbench —enfocar el grupo, leer el
+layout, esperar a que el foco llegue a otra ventana— antes de la única orden que
+cambia la tab activa (`openEditorAtIndex`). Dos filas pulsadas muy seguidas
+corren dos activaciones a la vez, y sin nada más gana la que TERMINA la última:
+con un grupo en una ventana flotante la espera más larga es fácilmente la del
+PRIMER clic, y queda activa la fila que no se pulsó la última.
+
+Toda activación pasa por un mismo `latestWins` (`utils/latestWins.ts`, puro y
+con tests) en `models/actions/activationActions.ts`, y cada paso que mueve el
+foco pregunta antes si sigue siendo la más reciente; la que no, se para ahí sin
+tocar nada. Vale para cualquier origen —un clic, un comando, un pin—, porque
+todos activan por ahí.
 
 ### Activar una pestaña de preview puede fallar la primera vez
 

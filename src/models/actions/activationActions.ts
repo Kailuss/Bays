@@ -4,20 +4,32 @@ import { BayHelpers } from '../BayHelpers';
 import { Logger } from '../../platform/logger';
 import { VSCODE_COMMANDS } from '../../constants/commands';
 import { TIMINGS } from '../../constants/timings';
+import { latestWins } from '../../utils/latestWins';
 
 /**
  * Activation actions - Activar y hacer focus en tabs
  */
 
+/**
+ * Every activation, whatever asked for it: a click, a command, a pin. Only the
+ * newest may change the active tab (see `utils/latestWins.ts`): two rows clicked
+ * in quick succession run side by side, and otherwise the slower one — the
+ * first, when a floating window makes its wait longer — would land last.
+ */
+const activations = latestWins();
+
 export async function activate(metadata: BayMetadata, state: BayState): Promise<void> {
-  return activateWithRetry(metadata, state, 0);
+  return activateWithRetry(metadata, state, 0, activations.begin());
 }
 
 async function activateWithRetry(
   metadata: BayMetadata,
   state: BayState,
-  attempt: number
+  attempt: number,
+  isCurrent: () => boolean,
 ): Promise<void> {
+  // Superseded by a newer activation: nothing of this one may act.
+  if (!isCurrent()) { return; }
   try {
     // NOTE: no markdown-preview special case here. The rendered preview is a
     // real VARIANT bay with its own row/tab — clicking the .md bay activates
@@ -44,7 +56,7 @@ async function activateWithRetry(
     // and that is what left a TERMINAL row answering a click with nothing at all:
     // not an error, not a retry, just a row that does not do anything.
     if (!metadata.uri || metadata.sourceBayId) {
-      return await BayHelpers.activateByNativeTab(metadata, state);
+      return await BayHelpers.activateByNativeTab(metadata, state, isCurrent);
     }
 
     // Si la bay nativa existe, SIEMPRE usar activación por índice
@@ -56,7 +68,7 @@ async function activateWithRetry(
         nativeTab.input.uri.toString() === metadata.uri.toString()
       ) {
         Logger.log('[BayAction] Using native activation by index for: ' + metadata.label);
-        return await BayHelpers.activateByNativeTab(metadata, state);
+        return await BayHelpers.activateByNativeTab(metadata, state, isCurrent);
       }
       // Si el URI no coincide, la bay fue reemplazada - continuar al fallback
       Logger.log('[BayAction] URI mismatch, bay was replaced: ' + metadata.label);
@@ -69,6 +81,7 @@ async function activateWithRetry(
       if (tabIndex !== -1) {
         Logger.log(`[BayAction] Activating by index (fallback): ${metadata.label}, index: ${tabIndex}`);
         await BayHelpers.focusGroup(state.viewColumn);
+        if (!isCurrent()) { return; }
         await vscode.commands.executeCommand(VSCODE_COMMANDS.OPEN_EDITOR_AT_INDEX, tabIndex);
         return;
       }
@@ -77,6 +90,7 @@ async function activateWithRetry(
     // Fallback: abrir con showTextDocument
     Logger.log('[BayAction] Opening with showTextDocument (final fallback): ' + metadata.label);
     const doc = await vscode.workspace.openTextDocument(metadata.uri);
+    if (!isCurrent()) { return; }
     await vscode.window.showTextDocument(doc, {
       viewColumn: state.viewColumn,
       preserveFocus: false,
@@ -88,11 +102,11 @@ async function activateWithRetry(
     if (attempt < TIMINGS.ACTIVATION_MAX_RETRIES) {
       Logger.log(`[BayAction] Activation failed (attempt ${attempt + 1}/${TIMINGS.ACTIVATION_MAX_RETRIES + 1}), retrying: ${metadata.label}`);
       await new Promise((resolve) => setTimeout(resolve, TIMINGS.ACTIVATION_RETRY_DELAY));
-      return activateWithRetry(metadata, state, attempt + 1);
+      return activateWithRetry(metadata, state, attempt + 1, isCurrent);
     }
 
     // Último intento: usar vscode.open como fallback
-    if (metadata.uri) {
+    if (metadata.uri && isCurrent()) {
       try {
         Logger.log('[BayAction] Using vscode.open as last resort: ' + metadata.label);
         await vscode.commands.executeCommand(VSCODE_COMMANDS.VSCODE_OPEN, metadata.uri, {

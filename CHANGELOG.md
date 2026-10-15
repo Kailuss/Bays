@@ -19,6 +19,8 @@ channel; even ones are stable releases.
 - The panel sends each icon to the view once, and resolves an icon shared by
   several tabs once, instead of on every change and for every row.
 - The icon theme is read once at startup, where it was read once per icon.
+- Clicking two tabs in quick succession activates the one clicked last, even
+  when the first one sits in a floating window.
 
 ### Fixed
 
