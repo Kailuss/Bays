@@ -157,6 +157,9 @@ export class BaySyncService {
       return;
     }
     this.reconcileDeferred = false;
+    // Timed only when someone is reading the trace: it is the number that says
+    // whether a rebuild per burst stays cheap in a given window.
+    const startedAt = Logger.tracing ? performance.now() : 0;
 
     const previousGroups = this.stateService.getGroups();
     const previousIds = new Map(previousGroups.map(g => [g.id, g.bays.map(b => b.metadata.id)]));
@@ -247,8 +250,11 @@ export class BaySyncService {
 
     this.stateService.adoptGroups(groups);
 
+    if (Logger.tracing) {
+      Logger.log(`[BaySync] Reconciled ${merged.size} bays in ${(performance.now() - startedAt).toFixed(2)} ms (${structural ? 'rebuild' : 'patch'}): ${groups.map(g => `col ${g.viewColumn}${g.isActive ? '*' : ''} (${g.bays.length})`).join(', ')}`);
+    }
+
     if (structural) {
-      Logger.log(`[BaySync] Reconciled: ${merged.size} bays in ${groups.map(g => `col ${g.viewColumn}${g.isActive ? '*' : ''} (${g.bays.length})`).join(', ')}`);
       this.stateService.notifyChange();
       return;
     }
