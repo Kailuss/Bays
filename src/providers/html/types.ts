@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import { Bay } from '../../models/Bay';
 import { BayGroup } from '../../models/BayGroup';
-import type { GroupSection } from '../../shared/protocol';
+import type { GroupSection, IconDelta } from '../../shared/protocol';
 
 //= OPCIONES DE RENDERIZADO
 
@@ -46,10 +46,10 @@ export type PendingIconRequest =
 /** Icono pendiente de resolución diferida (cache miss en el primer pintado) */
 export type PendingIcon = PendingIconRequest & { bayId: string };
 
-/** La lista como datos, su diccionario de iconos, y lo que faltó de la caché. */
+/** La lista como datos, lo que le falta al diccionario del cliente, y lo que faltó de la caché. */
 export type BuildSectionsResult = {
   sections: GroupSection[];
-  icons: Record<string, string>;
+  icons: IconDelta;
   pendingIcons: PendingIcon[];
 };
 

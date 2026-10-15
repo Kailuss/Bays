@@ -12,18 +12,33 @@
 // HTML deduplicado por clave — es markup que compone el host a partir del tema
 // de iconos, y pasa por la lista blanca de `utils/iconHtml.ts`.
 
-import type { BayView, GroupView, VariantView } from '../shared/protocol';
+import type { BayView, GroupView, IconDelta, VariantView } from '../shared/protocol';
+import { applyIconDelta } from '../utils/iconDelta';
 import { BAY_STATES } from '../shared/bayState';
 import { ICONS } from '../shared/icons';
 import { setTip, setOverflowTip } from './tooltip';
 import { setPathParts } from './pathTruncation';
 import { t } from './l10n';
 
-/** Los iconos del render actual: clave → HTML. */
+/**
+ * Every icon this client has been sent: key → HTML. The host sends each entry
+ * ONCE, so this is kept across messages and grows by what each one carries.
+ */
 let iconDictionary: Record<string, string> = {};
 
-export function setIconDictionary(icons: Record<string, string>): void {
-  iconDictionary = icons;
+/**
+ * Folds a message's part of the dictionary in. It is called when a message
+ * ARRIVES and never when it is painted: a render that lands mid-drag is held
+ * and can be replaced by the next one, and the entries only the first carried
+ * would be lost with it.
+ */
+export function receiveIcons(delta: IconDelta): void {
+  iconDictionary = applyIconDelta(iconDictionary, delta);
+}
+
+/** The markup a key draws, or nothing for a key the host never sent. */
+export function iconHtml(key: string): string {
+  return iconDictionary[key] ?? '';
 }
 
 /** Cómo se dibuja la lista: lo dicen los dos ajustes que la vista conmuta. */
@@ -69,7 +84,7 @@ function actionButton(action: string, bayId: string, icon: string, label: string
  */
 function iconSlot(key: string): HTMLSpanElement {
   const slot = el('span', 'bay-icon');
-  slot.innerHTML = iconDictionary[key] ?? '';
+  slot.innerHTML = iconHtml(key);
   return slot;
 }
 

@@ -63,9 +63,14 @@ export class IconKeyRegistry {
     return key;
   }
 
-  /** El diccionario entero, tal y como viaja en el mensaje. */
-  dictionary(): Record<string, string> {
-    return Object.fromEntries(this.html);
+  /** El diccionario entero. Lo que viaja de él lo decide `IconLedger`. */
+  entries(): ReadonlyMap<string, string> {
+    return this.html;
+  }
+
+  /** La clave del placeholder: un parche que resuelve a ella no mejora nada. */
+  placeholderKey(): string {
+    return this.keyFor(IconKeyRegistry.PLACEHOLDER);
   }
 
   /** Al cambiar el tema, los marcadores que tiene el cliente ya no valen. */

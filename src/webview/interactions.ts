@@ -6,7 +6,7 @@ import { BaysContextMenu } from './contextmenu';
 import type { HostToWebviewMessage, WebviewToHostMessage, RenderMessage } from '../shared/protocol';
 import { applyRender } from './render';
 import { initDragDrop, dragInFlight, onDragEnd } from './dragdrop';
-import { nameClassFor, stateSlot } from './rows';
+import { iconHtml, nameClassFor, receiveIcons, stateSlot } from './rows';
 import { setTipDelay, hideOrphanedTip } from './tooltip';
 import { setPathSeparator, truncateAllPaths, truncatePathsIn } from './pathTruncation';
 import { ICONS } from '../shared/icons';
@@ -217,7 +217,7 @@ function paint(msg: RenderMessage): void {
   // measures differently now.
   const resigned = setPathSeparator(msg.pathSeparator);
 
-  const { touched, built } = applyRender(msg.sections, msg.icons, {
+  const { touched, built } = applyRender(msg.sections, {
     compact : msg.compact,
     showPath: msg.showPath,
   });
@@ -381,6 +381,8 @@ export function initInteractions(): void {
     const msg = e.data;
 
     if (msg.type === 'render') {
+      // Before anything can defer the paint: see `receiveIcons`.
+      receiveIcons(msg.icons);
       syncDragDrop(msg.enableDragDrop);
       // A mitad de un arrastre no se toca el DOM: la reconciliación sustituiría
       // justo los nodos contra los que el gesto está midiendo. Lo que llegue se
@@ -456,12 +458,14 @@ export function initInteractions(): void {
     }
 
     if (msg.type === 'updateIcons') {
-      // Deferred icons resolved by the host — swap each placeholder in place
-      for (const it of msg.icons) {
+      // Deferred icons resolved by the host — swap each placeholder in place.
+      // Each patch names a KEY; its markup is in the dictionary, sent once.
+      receiveIcons(msg.icons);
+      for (const it of msg.patches) {
         const bay = document.querySelector(`.bay[data-bay-id="${CSS.escape(it.bayId)}"]`);
         if (bay) {
           const iconEl = bay.querySelector('.bay-icon');
-          if (iconEl) { iconEl.innerHTML = it.html; }
+          if (iconEl) { iconEl.innerHTML = iconHtml(it.key); }
         }
       }
     }

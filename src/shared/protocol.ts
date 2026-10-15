@@ -75,12 +75,26 @@ export type UpdateBayLabelMessage = {
   label: string;
 };
 
-export type IconPatch = { bayId: string; html: string };
+/**
+ * The part of the icon dictionary a message carries: each entry crosses ONCE per
+ * client, and all of them again, as a reset, when the client is new or the keys
+ * were re-minted by a theme change (`utils/iconDelta.ts`).
+ */
+export type IconDelta = {
+  entries: Record<string, string>;
+  /** True: drop what you had, this is all of it. */
+  reset  : boolean;
+};
+
+/** A row whose icon resolved late: which dictionary key it now draws. */
+export type IconPatch = { bayId: string; key: string };
 
 /** Iconos resueltos en diferido tras el primer pintado. */
 export type UpdateIconsMessage = {
   type: 'updateIcons';
-  icons: IconPatch[];
+  /** The entries the patched keys need that the client does not have yet. */
+  icons: IconDelta;
+  patches: IconPatch[];
 };
 
 /** El estado de una bay cambió: el cliente redibuja su marca. */
@@ -102,7 +116,8 @@ export type BayStateChangedMessage = {
 // La única excepción son los ICONOS, y viaja deduplicada: el marcador de un
 // tema puede ser un `data:` URI de kilobytes, así que una carpeta con treinta
 // ficheros del mismo tipo mandaría treinta copias del mismo SVG. Cada icono
-// tiene una CLAVE en `RenderMessage.icons` y las filas la referencian.
+// tiene una CLAVE en `RenderMessage.icons` y las filas la referencian, y cada
+// entrada cruza UNA vez por cliente: lo que viaja es lo que le falta.
 
 /** El estado que una fila reporta, como CÓDIGO. El glifo lo elige el cliente. */
 export type BayStateCode =
@@ -195,8 +210,8 @@ export type GroupSection = {
 export type RenderMessage = {
   type    : 'render';
   sections: GroupSection[];
-  /** clave → HTML del icono. Deduplicado: ver arriba. */
-  icons   : Record<string, string>;
+  /** Lo que le falta al diccionario del cliente. Deduplicado: ver arriba. */
+  icons   : IconDelta;
   /** Drag & drop encendido: el cliente lo arma perezosamente la primera vez. */
   enableDragDrop: boolean;
   /** Modo compacto: nombre y ruta en una línea. */

@@ -16,7 +16,7 @@ import {
   lookupWebviewExtensionIcon,
   resolveWebviewExtensionIconAsync,
 } from '../../platform/webviewExtensionIcons';
-import { codiconHtml, iconMarkerToHtml, placeholderIconHtml } from '../../utils/iconHtml';
+import { codiconHtml, iconMarkerToHtml } from '../../utils/iconHtml';
 import { IconKeyRegistry } from './IconKeyRegistry';
 import { Logger } from '../../platform/logger';
 import type { PendingIconRequest } from './types';
@@ -104,45 +104,44 @@ export class IconRenderer {
    * Resolución asíncrona de lo que falló la caché, para el parche diferido tras
    * el primer pintado. Devuelve el HTML del icono ya resuelto.
    */
-  async resolvePending(request: PendingIconRequest): Promise<string> {
+  async resolvePending(request: PendingIconRequest): Promise<{ marker?: string; html?: string }> {
+    // The SAME two shapes `resolveImmediate` returns, and for the same icon the
+    // same value: a theme icon as its marker, everything else as its markup. So
+    // the key a late patch mints is the key the next render reuses, not a second
+    // dictionary entry holding the same kilobytes.
     if (request.kind === 'terminal') {
       try {
         const dataUri = await resolveTerminalIconAsync(request.key);
-        if (dataUri) { return iconMarkerToHtml(dataUri); }
+        if (dataUri) { return { html: iconMarkerToHtml(dataUri) }; }
       } catch (error) {
         Logger.error(`[Bays] Deferred terminal icon failed for ${request.key}`, error);
       }
-      return codiconHtml(ICONS.bay.terminal, BUILTIN_ICON_COLOR);
+      return { html: codiconHtml(ICONS.bay.terminal, BUILTIN_ICON_COLOR) };
     }
 
     if (request.kind === 'webview') {
       try {
         const dataUri = await resolveWebviewExtensionIconAsync(request.viewType, request.label);
-        if (dataUri) { return iconMarkerToHtml(dataUri); }
+        if (dataUri) { return { html: iconMarkerToHtml(dataUri) }; }
       } catch (error) {
         Logger.error(`[Bays] Deferred extension icon failed for ${request.label}`, error);
       }
-      return codiconHtml(
-        resolveBuiltInCodicon(request.label, request.viewType),
-        BUILTIN_ICON_COLOR,
-      );
+      return {
+        html: codiconHtml(resolveBuiltInCodicon(request.label, request.viewType), BUILTIN_ICON_COLOR),
+      };
     }
 
     try {
       const cached = this.iconManager.getCachedIcon(request.fileName);
-      if (cached) {
-        return iconMarkerToHtml(cached);
-      }
+      if (cached) { return { marker: cached }; }
       const data = await this.iconManager.getFileIconAsBase64(
         request.fileName, this.context, request.languageId,
       );
-      if (data) {
-        return iconMarkerToHtml(data);
-      }
+      if (data) { return { marker: data }; }
     } catch (error) {
       Logger.error(`[Bays] Deferred icon resolution failed for ${request.fileName}`, error);
     }
-    return placeholderIconHtml();
+    return { marker: IconKeyRegistry.PLACEHOLDER };
   }
 
   /**

@@ -24,7 +24,7 @@
 import type { GroupSection } from '../shared/protocol';
 import { planRender, itemsToPaint, EMPTY_KEY } from '../utils/renderPlan';
 import type { KeyedItem } from '../utils/renderPlan';
-import { buildBayBlock, buildEmpty, buildGroupHeader, buildGroupRows, setIconDictionary } from './rows';
+import { buildBayBlock, buildEmpty, buildGroupHeader, buildGroupRows } from './rows';
 import type { RowLayout } from './rows';
 
 /** La firma de lo que hay pintado, por clave. Es lo que el plan compara. */
@@ -160,16 +160,11 @@ export type RenderResult = { touched: boolean; built: HTMLElement[] };
 /** Applies the list. */
 export function applyRender(
   sections: GroupSection[],
-  icons: Record<string, string>,
   layout: RowLayout,
 ): RenderResult {
   const built: HTMLElement[] = [];
   const root = container();
   if (!root) { return { touched: false, built }; }
-
-  // El diccionario se pone ANTES de construir nada: es de donde cada fila saca
-  // el markup de su icono.
-  setIconDictionary(icons);
 
   const items   = buildables(sections, layout);
   const wanted  = itemsToPaint(items);

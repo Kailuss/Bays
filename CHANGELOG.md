@@ -16,6 +16,8 @@ channel; even ones are stable releases.
   that covers the bay and every variant under it.
 - Closing a Markdown file no longer reopens it to keep its preview attached:
   the preview stays as a row of its own.
+- The panel sends each icon to the view once, and resolves an icon shared by
+  several tabs once, instead of on every change and for every row.
 
 ### Fixed
 

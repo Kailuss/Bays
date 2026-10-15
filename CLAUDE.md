@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 171 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 177 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -525,6 +525,17 @@ Es la parte que cruza muchos ficheros. Del lado del host:
    única excepción y viajan como HTML, deduplicados por clave en
    `html/IconKeyRegistry`: un marcador de tema es un `data:` URI de kilobytes, así
    que diez pestañas `.ts` mandarían diez copias del mismo SVG.
+   - **Y cada entrada cruza UNA vez por cliente** (`utils/iconDelta.ts`, puro y con
+     tests). El cliente guarda el diccionario entre mensajes, y lo que viaja es lo
+     que le falta (`IconLedger`). Se reenvía entero, como un RESET, exactamente
+     cuando el cliente no puede tenerlo: en cada `ready` —un webview recargado
+     también lo manda— y en un cambio de tema, que reacuña las claves desde `i0`
+     con otros marcadores detrás. Antes cada `render` reenviaba TODOS los iconos
+     vistos en la sesión, kilobytes cada uno, con cada cambio estructural.
+   - **El cliente funde el diccionario al RECIBIR, nunca al pintar**
+     (`receiveIcons`): un render que llega a mitad de un arrastre se aplaza y el
+     siguiente lo sustituye, y las entradas que solo traía el primero se perderían
+     con él.
 5. **El cliente** (`webview/interactions.ts`, bundleado en
    `dist/webview/main.js`) atiende los clics y el menú contextual y contesta con
    `postMessage`.
@@ -565,7 +576,13 @@ Los cambios de activo, de sucio y de git/diagnósticos se parchean por su propio
   el enriquecedor de títulos de Claude Code).
 - **iconos diferidos** → tras el primer pintado, `patchIcons()` manda
   `updateIcons` para sustituir los `.bay-icon` de reserva. Los iconos se pintan
-  de caché de forma síncrona; los fallos se resuelven en paralelo.
+  de caché de forma síncrona; los fallos se resuelven en paralelo, **uno por
+  icono distinto y no uno por fila** (`groupRequests`: diez `.ts` leían y
+  codificaban el mismo SVG diez veces, porque la caché se escribe después de
+  leer). El parche nombra una CLAVE por fila y su markup va en el diccionario, una
+  vez; y la clave es la misma que reusará el siguiente render, porque la
+  resolución diferida devuelve las mismas dos formas que la síncrona (marcador
+  de tema o HTML). Un parche que resuelve al placeholder no se manda.
 - **reordenar arrastrando** → el webview mueve el DOM él mismo y el host reordena
   su modelo en silencio, sin reconstruir nada.
 

@@ -14,9 +14,10 @@ import { FileActionRegistry }   from '../services/registry/FileActionRegistry';
 import { Logger }               from '../platform/logger';
 import { activeGroupId } from '../platform/activeGroup';
 import { bayStateCode }         from '../utils/stateIndicator';
+import { groupRequests }        from '../utils/iconDelta';
 import { VariantCloser }        from '../services/core/bay/VariantCloser';
 import { BaysHtmlBuilder }      from './BaysHtmlBuilder';
-import type { PendingIcon }     from './html';
+import type { PendingIcon, PendingIconRequest } from './html';
 import { BayContextMenu }       from './BayContextMenu';
 import { GroupActions }         from './GroupActions';
 import type {
@@ -192,6 +193,9 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
    */
   private handleReady(): void {
     this._clientReady = true;
+    // A client that just loaded holds no icon dictionary, whatever the last one
+    // was sent: the first render carries all of it.
+    this.htmlBuilder.forgetSentIcons();
     this.render();
     void this.sendThemeFont();
     void this.sendProductIcons();
@@ -274,21 +278,30 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     if (!this._view || pending.length === 0) { return; }
 
     const view = this._view;
-    const resolved = await Promise.all(
-      pending.map(async (p) => ({
-        bayId: p.bayId,
-        html : await this.htmlBuilder.resolveIconHtml(p),
-      })),
-    );
-    // Null = sin mejora sobre el placeholder ya pintado (p.ej. el icono de la
-    // extensión dueña de un webview no se pudo leer): esa bay no se parchea.
-    const icons = resolved.filter((p): p is { bayId: string; html: string } => p.html !== null);
-    if (icons.length === 0) { return; }
+    // One resolution per distinct icon, not per row: ten tabs of one type that
+    // missed the cache read and encoded the same file ten times in parallel.
+    const groups = groupRequests(pending, pendingIconKey);
+    const resolved = await Promise.all(groups.map(async ({ first, members }) => ({
+      key: await this.htmlBuilder.resolveIconKey(first),
+      members,
+    })));
 
-    // Bail out if a full rebuild replaced the view/DOM while we were resolving
+    // Bail out if a full rebuild replaced the view/DOM while we were resolving:
+    // that render carries these keys itself.
     if (this._view !== view || this._fullRefreshPending) { return; }
 
-    view.webview.postMessage({ type: 'updateIcons', icons } satisfies UpdateIconsMessage);
+    // A key, not markup, per row: the markup travels once, in the delta, and only
+    // if the client does not have it already. Null is no better than the
+    // placeholder already painted, so that row is not patched.
+    const patches = resolved.flatMap(({ key, members }) =>
+      key === null ? [] : members.map(m => ({ bayId: m.bayId, key })));
+    if (patches.length === 0) { return; }
+
+    view.webview.postMessage({
+      type: 'updateIcons',
+      icons: this.htmlBuilder.takeIcons(),
+      patches,
+    } satisfies UpdateIconsMessage);
   }
 
   /**
@@ -595,4 +608,17 @@ export class BaysWebviewProvider implements vscode.WebviewViewProvider {
     return vscode.workspace.workspaceFolders?.[0]?.name ?? 'No Folder';
   }
 
+}
+
+/**
+ * Which icon a deferred request waits for. Two rows with the same identity draw
+ * the same icon, so they share one resolution. A file is keyed by its name in
+ * lower case because that is what the icon cache itself is keyed by.
+ */
+function pendingIconKey(request: PendingIconRequest): string {
+  switch (request.kind) {
+    case 'file'    : return `file:${request.fileName.toLowerCase()}`;
+    case 'webview' : return `webview:${request.viewType ?? ''}:${request.label}`;
+    case 'terminal': return `terminal:${request.key}`;
+  }
 }

@@ -21,13 +21,16 @@ import { relativeAge } from '../utils/relativeAge';
 import { demoteOrphanVariant } from '../services/core/helpers/tabConverter';
 import { ICONS } from '../shared/icons';
 import { IconRenderer, StylesBuilder, IconKeyRegistry, BuildSectionsOptions, WebviewResourceUris, PendingIcon, PendingIconRequest, BuildSectionsResult } from './html';
-import type { BayView, GroupSection, QuickActionView, VariantView } from '../shared/protocol';
+import type { BayView, GroupSection, IconDelta, QuickActionView, VariantView } from '../shared/protocol';
+import { IconLedger } from '../utils/iconDelta';
 import { activeGroupId } from '../platform/activeGroup';
 
 export class BaysHtmlBuilder {
   private readonly iconRenderer: IconRenderer;
   private readonly stylesBuilder: StylesBuilder;
   private readonly iconKeys = new IconKeyRegistry();
+  /** Which of those entries the current client already holds. */
+  private readonly iconLedger = new IconLedger();
   // Set per-build from options; buildBay reads it to gate the hover buttons.
   // buildSections runs single-flight (debounced refresh), so a transient field is safe.
   private _enableHoverActions = true;
@@ -137,7 +140,7 @@ export class BaysHtmlBuilder {
       bays: this.buildBays(bays, group.isLocked, showPath, copilotReady, pendingIcons),
     }));
 
-    return { sections, icons: this.iconKeys.dictionary(), pendingIcons };
+    return { sections, icons: this.iconLedger.take(this.iconKeys.entries()), pendingIcons };
   }
 
   /**
@@ -149,9 +152,27 @@ export class BaysHtmlBuilder {
     return this.iconManager.getFontFaceCss();
   }
 
-  /** Resuelve el HTML de un icono por nombre de archivo (parche diferido). */
-  resolveIconHtml(request: PendingIconRequest): Promise<string> {
-    return this.iconRenderer.resolvePending(request);
+  /**
+   * The dictionary key a late-resolved icon draws, or null when it resolved to
+   * the placeholder the row already shows — a patch that would change nothing.
+   */
+  async resolveIconKey(request: PendingIconRequest): Promise<string | null> {
+    const { marker, html } = await this.iconRenderer.resolvePending(request);
+    const key = marker !== undefined ? this.iconKeys.keyFor(marker) : this.iconKeys.keyForHtml(html as string);
+    return key === this.iconKeys.placeholderKey() ? null : key;
+  }
+
+  /** The entries minted since the last message that the client does not have. */
+  takeIcons(): IconDelta {
+    return this.iconLedger.take(this.iconKeys.entries());
+  }
+
+  /**
+   * A new client holds no dictionary: the next message carries all of it, as a
+   * reset. Called on every `ready`, which a reloaded webview also sends.
+   */
+  forgetSentIcons(): void {
+    this.iconLedger.forget();
   }
 
   /**
@@ -160,6 +181,9 @@ export class BaysHtmlBuilder {
    */
   clearIconKeys(): void {
     this.iconKeys.clear();
+    // Keys restart at i0 with other markers behind them: what the client holds
+    // under them is the previous theme's, so it is replaced, not merged into.
+    this.iconLedger.forget();
   }
 
   //= RESOLUCIÓN DE RECURSOS
