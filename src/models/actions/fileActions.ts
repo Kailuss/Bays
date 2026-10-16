@@ -110,13 +110,17 @@ export async function splitRight(metadata: BayMetadata, _state: BayState): Promi
   });
 }
 
+/**
+ * Moves THIS bay's tab to a window of its own. The native command acts on the
+ * ACTIVE editor, so the tab is put in front first — without that it moved
+ * whatever happened to be active. Any kind of tab moves: a chat is the case
+ * this is most often wanted for, and it has no uri to reopen elsewhere.
+ */
 export async function moveToNewWindow(
   metadata: BayMetadata,
-  _state: BayState
+  state: BayState
 ): Promise<void> {
-  if (!metadata.uri) {
-    return;
-  }
+  await BayHelpers.activateByNativeTab(metadata, state);
   await vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow');
 }
 
