@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.32] - 2026-10-16
+
+### Changed
+
+- Group headers have the rounder corners of Atria and Railyard.
+- Group colours are the same eight hues Atria and Railyard mark a project with. Teal and pink are new, and purple is now violet.
+- The colour picker shows a swatch of each hue instead of an emoji.
+
 ## [0.4.31] - 2026-10-16
 
 ### Added
