@@ -1,24 +1,34 @@
 import * as vscode from 'vscode';
 import { BayGroup, BayGroupColor, GROUP_COLORS, defaultGroupColor, getGroupLabel } from '../models/BayGroup';
 import { GroupCustomizationService } from '../services/ui/GroupCustomizationService';
+import { rootColorHex } from '../shared/rootColors';
 
-/** Muestras para el QuickPick: no admite color, pero sí emoji. */
-const COLOR_SWATCH: Record<BayGroupColor, string> = {
-  blue    : '🔵',
-  green   : '🟢',
-  yellow  : '🟡',
-  orange  : '🟠',
-  red     : '🔴',
-  purple  : '🟣',
-};
+/**
+ * La muestra de cada color en el QuickPick. Un `ThemeIcon` con color no colorea
+ * nada en una fila de QuickPick, y un emoji no existe para todos los tonos (no
+ * hay círculo verde azulado ni rosa), así que la muestra es un SVG en un `data:`
+ * uri: la única vía que una fila admite para pintar un color. Los dos juegos
+ * salen de la misma tabla que pinta la cabecera (`rootColorHex`), así que la
+ * muestra y el grupo no pueden discrepar; VS Code elige el claro o el oscuro.
+ */
+function swatch(color: BayGroupColor): { light: vscode.Uri; dark: vscode.Uri } {
+  const dot = (hex: string | null) => vscode.Uri.parse(
+    `data:image/svg+xml;utf8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="5.5" fill="${hex}"/></svg>`,
+    )}`,
+  );
+  return { light: dot(rootColorHex(color, false)), dark: dot(rootColorHex(color, true)) };
+}
 
 const COLOR_NAME: Record<BayGroupColor, string> = {
-  blue    : 'Blue',
-  green   : 'Green',
-  yellow  : 'Yellow',
-  orange  : 'Orange',
   red     : 'Red',
-  purple  : 'Purple',
+  orange  : 'Orange',
+  yellow  : 'Yellow',
+  green   : 'Green',
+  teal    : 'Teal',
+  blue    : 'Blue',
+  violet  : 'Violet',
+  pink    : 'Pink',
 };
 
 /**
@@ -26,7 +36,7 @@ const COLOR_NAME: Record<BayGroupColor, string> = {
  *
  * Cada una es directa — no hay menú previo que las agrupe: la cabecera ya
  * expone un botón por acción. Sólo el color abre un QuickPick, porque elegir
- * entre seis valores no cabe en un botón.
+ * entre ocho valores no cabe en un botón.
  *
  * Todas devuelven `true` si tocaron algo, para que el llamante decida cuándo
  * reaplicar la personalización y repintar.
@@ -57,13 +67,15 @@ export class GroupActions {
     // que le toca por columna, que es lo que ve un grupo recién abierto.
     const items: Array<vscode.QuickPickItem & { color?: BayGroupColor }> = [
       {
-        label       : `${COLOR_SWATCH[auto]}  Auto`,
+        label       : 'Auto',
+        iconPath    : swatch(auto),
         description : isAuto ? 'current · from group position' : 'from group position',
         color       : undefined,
       },
       { label: '', kind: vscode.QuickPickItemKind.Separator },
       ...GROUP_COLORS.map(color => ({
-        label       : `${COLOR_SWATCH[color]}  ${COLOR_NAME[color]}`,
+        label       : COLOR_NAME[color],
+        iconPath    : swatch(color),
         description : !isAuto && color === group.color ? 'current' : undefined,
         color,
       })),

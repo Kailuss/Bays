@@ -13,6 +13,7 @@
  */
 
 import type { IconName } from './icons';
+import type { RootColor } from './rootColors';
 
 //= MODELO DEL MENÚ CONTEXTUAL
 
@@ -194,8 +195,11 @@ export type GroupView = {
   active  : boolean;
 };
 
-/** Uno de los colores con los que se tiñe un grupo. */
-export type BayGroupColor = 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'purple';
+/**
+ * Uno de los colores con los que se tiñe un grupo: los ocho tonos de la casa,
+ * los mismos con los que Atria y Railyard marcan un proyecto.
+ */
+export type BayGroupColor = RootColor;
 
 /**
  * Un grupo con sus filas. Con un solo grupo no hay cabecera ni acento de color:

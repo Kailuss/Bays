@@ -23,6 +23,7 @@ const testsOnly   = process.argv.includes('--tests');
  */
 const CSS_ORDER = [
   ['base.css', 'group-header.css', 'the reset has to land before anything that styles a box'],
+  ['palette.css', 'group-header.css', 'a header paints with the hues the palette declares'],
   ['bay-layout.css', 'bay-content.css', 'content refines the boxes layout declares (.bay-text, .bay-name)'],
   ['bay-content.css', 'variants.css', 'a variant row overrides the icon and text sizing of a normal one'],
   ['bay-content.css', 'bay-file-states.css', 'the git/diagnostic colours tie with .bay-name and must win'],

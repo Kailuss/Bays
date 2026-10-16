@@ -429,7 +429,9 @@
     "kit": [
       "release",
       "check-release",
-      "punctuation"
+      "punctuation",
+      "root-colors",
+      "palette"
     ]
   },
   "scripts": {

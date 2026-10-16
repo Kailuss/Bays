@@ -42,6 +42,7 @@
 
 /* Imports */
 @import './base.css';
+@import './palette.css';       /* The house's eight hues, from the kit */
 @import './group-header.css';
 @import './bay-layout.css';        /* Normal bays layout + icons */
 @import './bay-content.css';       /* Bay content (text, paths) - ANTES de variants */

@@ -77,12 +77,21 @@ function docFiles(dir, out = []) {
  * src/test/ is skipped: it is the one place where a path-shaped string is DATA
  * and not a citation, and no rename should ever be blocked by a fixture.
  */
+/**
+ * A file the shared kit syncs (its first line names `@lovervoid/kit`) carries
+ * the comments of the extension it was written in, citing that tree's paths:
+ * those are claims about another repo, and the kit's own check owns the file.
+ */
+function fromKit(file) {
+	return fs.readFileSync(file, 'utf8').split('\n', 1)[0].includes('@lovervoid/kit');
+}
+
 function sourceFiles(dir, out = []) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 		const full = path.join(dir, entry.name);
 		if (entry.isDirectory()) {
 			if (entry.name !== 'test') { sourceFiles(full, out); }
-		} else if (/\.(ts|css)$/.test(entry.name)) {
+		} else if (/\.(ts|css)$/.test(entry.name) && !fromKit(full)) {
 			out.push(full);
 		}
 	}

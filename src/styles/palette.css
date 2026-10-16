@@ -1,0 +1,36 @@
+/* @lovervoid/kit styles/palette.css: synced by `lovervoid sync`. Edit it in the kit, not here. */
+/* The eight project hues of the house, and nothing else.
+
+   The same `--nav-root-*` set that styles/base.css declares, for an extension
+   that draws with the hues but not with the rest of that sheet (its reset, its
+   `.codicon` nudge and the view's own rules would move a layout that was not
+   built on them). The VALUES are base.css's, and the kit's own test fails the
+   moment the two copies stop agreeing, so this is a second door to one palette
+   and never a second palette.
+
+   The dark set is on `:root` and the light one answers from the class VS Code
+   puts on the body (`vscode-light`, plus `vscode-high-contrast-light`, which
+   does not carry the first). The hue ANGLE is the same in both and only
+   saturation and lightness move, so a hue keeps its name whatever the theme. */
+:root {
+    --nav-root-red:     hsl(350, 100%, 64%);
+    --nav-root-orange:  hsl(20, 100%, 64%);
+    --nav-root-yellow:  hsl(40, 100%, 64%);
+    --nav-root-green:   hsl(80, 64%, 48%);
+    --nav-root-teal:    hsl(180, 64%, 48%);
+    --nav-root-blue:    hsl(210, 64%, 48%);
+    --nav-root-violet:  hsl(260, 64%, 64%);
+    --nav-root-pink:    hsl(330, 56%, 64%);
+}
+
+body.vscode-light,
+body.vscode-high-contrast-light {
+    --nav-root-red: hsl(350, 100%, 67%);
+    --nav-root-orange: hsl(20, 100%, 65%);
+    --nav-root-yellow: hsl(40, 100%, 61%);
+    --nav-root-green: hsl(80, 68%, 47%);
+    --nav-root-teal: hsl(180, 34%, 49%);
+    --nav-root-blue: hsl(210, 77%, 43%);
+    --nav-root-violet: hsl(260, 32%, 44%);
+    --nav-root-pink: hsl(330, 56%, 64%);
+}

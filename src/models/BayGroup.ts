@@ -1,12 +1,14 @@
 import { Bay } from './Bay';
 import * as vscode from 'vscode';
 
+import { GROUP_COLORS, autoGroupColor } from '../utils/groupColors';
+
 /**
- * Paleta con la que se tiñe un grupo. Cada id se traduce en `group-header.css`
- * a un `--vscode-charts-*`, así que el color sigue siendo nativo del tema activo
- * (claro u oscuro) en lugar de un hex fijo.
+ * Paleta con la que se tiñe un grupo: los ocho tonos de la casa. Cada id se
+ * traduce en `group-header.css` a un `--nav-root-*` de `styles/palette.css`,
+ * que lleva un juego claro y otro oscuro.
  */
-export const GROUP_COLORS = ['blue', 'green', 'yellow', 'orange', 'red', 'purple'] as const;
+export { GROUP_COLORS };
 
 // El TIPO lo declara el protocolo, porque el color viaja al cliente y allí decide
 // qué acento lleva un bloque: dos uniones para un mismo conjunto se separan, y
@@ -26,7 +28,7 @@ void _COLORS_MATCH_THE_PROTOCOL;
  * (Con un solo grupo el color existe pero no se pinta — no distingue nada.)
  */
 export function defaultGroupColor(viewColumn: number): BayGroupColor {
-  return GROUP_COLORS[Math.max(0, viewColumn - 1) % GROUP_COLORS.length];
+  return autoGroupColor(viewColumn);
 }
 
 /** Represents an editor group containing multiple bays. */

@@ -1,21 +1,21 @@
 /* ===== Group header ===== */
 
-/* The group palette. Declared once, for the one attribute that carries it:
-   `data-color` on the header. The values are colours VS Code registers, so the
-   tint follows the active theme instead of pinning a hex (the fallback only
-   covers themes with no charts.*).
+/* The group palette: the eight hues of the house, the same ones Atria and
+   Railyard mark a project with, so one colour name is one colour across the
+   three views. Their values live in palette.css, synced from the shared kit
+   with a dark set and a light one; this only says which hue a header takes.
 
-   It used to be declared for a second attribute as well, `data-group-color` on
-   every bay block, which drew a stripe down each row's left edge. The hue now
-   lives on the header alone: a row inside a group already reads as being in it,
-   and a stripe repeating that on every row of every group was the loudest thing
-   in the list. */
-[data-color="blue"]   { --group-color: var(--vscode-charts-blue,   #3794ff); }
-[data-color="green"]  { --group-color: var(--vscode-charts-green,  #89d185); }
-[data-color="yellow"] { --group-color: var(--vscode-charts-yellow, #cca700); }
-[data-color="orange"] { --group-color: var(--vscode-charts-orange, #d18616); }
-[data-color="red"]    { --group-color: var(--vscode-charts-red,    #f14c4c); }
-[data-color="purple"] { --group-color: var(--vscode-charts-purple, #b180d7); }
+   Declared once, for the one attribute that carries it: `data-color` on the
+   header. The hue lives on the header alone, never as a stripe down each row:
+   a row inside a group already reads as being in it. */
+[data-color="red"]    { --group-color: var(--nav-root-red); }
+[data-color="orange"] { --group-color: var(--nav-root-orange); }
+[data-color="yellow"] { --group-color: var(--nav-root-yellow); }
+[data-color="green"]  { --group-color: var(--nav-root-green); }
+[data-color="teal"]   { --group-color: var(--nav-root-teal); }
+[data-color="blue"]   { --group-color: var(--nav-root-blue); }
+[data-color="violet"] { --group-color: var(--nav-root-violet); }
+[data-color="pink"]   { --group-color: var(--nav-root-pink); }
 
 /* === The header, as a CARD ==================================================
 
