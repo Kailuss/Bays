@@ -7,6 +7,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.31] - 2026-10-16
+
+### Added
+
+- A Claude Code chat's menu renames the session, marks it as unread, adds it to
+  a session group and opens a new conversation.
+- Every tab's menu, a chat's included, moves it to a new window.
+
+### Changed
+
+- "Close to the Right" is now "Close Below", and closes the rows below in the
+  panel's own order.
+- Bays have tighter rounded corners.
+- The menu is translated.
+
+### Fixed
+
+- The working spinner stops after a session is compacted, a local command runs
+  or a turn is interrupted.
+- "Move to New Window" moves the tab it was opened on, not the active one.
+
 ## [0.4.30] - 2026-10-16
 
 ### Added
