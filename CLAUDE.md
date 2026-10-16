@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 190 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 198 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1115,9 +1115,17 @@ y **descartando cualquier empate** — una coincidencia ambigua es ninguna. Un
 **Y de esa misma lectura sale si el chat está TRABAJANDO**: la fila cambia su
 icono por un spinner mientras dura un turno. El transcript lo dice sin adivinar
 nada: la última línea de TURNO —un prompt o un `tool_result` (`user`), o un
-mensaje `assistant`— dice que el turno corre salvo que ese mensaje haya parado en
-`end_turn`. Lo demás (`ai-title`, `attachment`, `bridge-session`…) es
+mensaje `assistant`— dice que el turno corre mientras ese mensaje siga sin parar
+o haya parado para llamar a una herramienta (`tool_use`); cualquier otra parada
+lo acaba. Lo demás (`ai-title`, `attachment`, `bridge-session`…) es
 contabilidad y no dice nada.
+
+- **Una línea `user` NO es siempre un prompt**, y leerla como tal es lo que
+  dejaba el spinner girando tras `/compact`: la compactación escribe el resumen
+  (`isCompactSummary`), el comando y su stdout como líneas `user`, y detrás no
+  llega ninguna `assistant`. Esas, un comando local (`<command-name>`,
+  `<local-command-stdout>`…) y una interrupción (`[Request interrupted by
+  user…`) acaban el turno; el contexto inyectado (`isMeta`) no dice nada.
 
 - **Solo a través de un título CASADO**: una tab cuyo transcript no se puede
   nombrar sin ambigüedad no lleva spinner, que es la dirección segura.

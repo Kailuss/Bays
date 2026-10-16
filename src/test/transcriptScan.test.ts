@@ -126,6 +126,39 @@ test('titlesIn: no turn line says nothing about the turn', () => {
   assert.equal(titlesIn([meta, ai('t')].join('\n')).working, undefined);
 });
 
+// The lines `/compact` leaves behind, as Claude Code writes them.
+const boundary   = JSON.stringify({ type: 'system', subtype: 'compact_boundary', content: 'Conversation compacted' });
+const summary    = JSON.stringify({ type: 'user', isCompactSummary: true, isVisibleInTranscriptOnly: true, message: { content: 'This session is being continued…' } });
+const caveat     = JSON.stringify({ type: 'user', isMeta: true, message: { content: '<local-command-caveat>The command below…</local-command-caveat>' } });
+const command    = JSON.stringify({ type: 'user', message: { content: '<command-name>/compact</command-name>' } });
+const stdout     = JSON.stringify({ type: 'user', message: { content: '<local-command-stdout>Compacted </local-command-stdout>' } });
+
+test('titlesIn: a compaction leaves the chat idle', () => {
+  assert.equal(titlesIn([prompt, endTurn, boundary, summary, caveat, command, stdout].join('\n')).working, false);
+});
+
+test('titlesIn: a compaction ends a turn that was still running', () => {
+  assert.equal(titlesIn([prompt, toolUse, boundary, summary].join('\n')).working, false);
+});
+
+test('titlesIn: an interrupted turn is over', () => {
+  const stopped = JSON.stringify({ type: 'user', message: { content: [{ type: 'text', text: '[Request interrupted by user for tool use]' }] } });
+  assert.equal(titlesIn([prompt, toolUse, toolResult, stopped].join('\n')).working, false);
+});
+
+test('titlesIn: injected context neither starts nor ends a turn', () => {
+  const injected = JSON.stringify({ type: 'user', isMeta: true, message: { content: 'skill body' } });
+  assert.equal(titlesIn([endTurn, injected].join('\n')).working, false);
+  assert.equal(titlesIn([prompt, injected].join('\n')).working, true);
+});
+
+test('titlesIn: a turn that stops on anything but a tool call is over', () => {
+  const maxTokens = JSON.stringify({ type: 'assistant', message: { stop_reason: 'max_tokens' } });
+  const streaming = JSON.stringify({ type: 'assistant', message: { stop_reason: null } });
+  assert.equal(titlesIn([prompt, maxTokens].join('\n')).working, false);
+  assert.equal(titlesIn([prompt, streaming].join('\n')).working, true);
+});
+
 test('scanAppended: the turn state of the new bytes overrides the old one', async () => {
   const before = fileOf([prompt, toolUse]);
   const after  = fileOf([prompt, toolUse, toolResult, endTurn]);

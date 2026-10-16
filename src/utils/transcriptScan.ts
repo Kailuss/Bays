@@ -84,16 +84,58 @@ export function mergeTitles(newer: FoundTitles, older: FoundTitles): FoundTitles
  * What one line says about the turn, or undefined when it is not a turn line.
  * The substring test keeps JSON.parse off the bookkeeping lines, and a
  * `"type":"user"` quoted inside a string is escaped, so it never matches.
+ *
+ * A `user` line is NOT always a prompt, and reading it as one is what left the
+ * spinner running after `/compact`: the compaction writes its summary, the
+ * command and its stdout as user lines, and no assistant line ever follows. So
+ * a user line starts a turn only when it is a real prompt or a tool result;
+ * the ones that END a turn (a local command, an interruption, a compaction) say
+ * so, and injected context (`isMeta`) says nothing.
  */
 function turnStateOf(line: string): boolean | undefined {
   if (line.includes('"type":"user"')) {
-    return parse(line)?.type === 'user' ? true : undefined;
+    const obj = parse(line) as UserLine | undefined;
+    if (obj?.type !== 'user') { return undefined; }
+    if (obj.isMeta === true) { return undefined; }
+    if (obj.isCompactSummary === true || obj.isVisibleInTranscriptOnly === true) { return false; }
+    const text = firstText(obj.message?.content);
+    if (text !== undefined && (LOCAL_COMMAND.test(text) || text.startsWith(INTERRUPTED))) { return false; }
+    return true;
   }
   if (line.includes('"type":"assistant"')) {
     const obj = parse(line) as { type?: unknown; message?: { stop_reason?: unknown } } | undefined;
     if (obj?.type !== 'assistant') { return undefined; }
-    // A message with no stop reason yet is still streaming: the turn runs.
-    return obj.message?.stop_reason !== 'end_turn';
+    // A message with no stop reason yet is still streaming, and one that stopped
+    // to call a tool is waiting on its result: both are a turn in flight. Every
+    // other stop (end_turn, max_tokens, an API error's stop_sequence) ends it.
+    const stop = obj.message?.stop_reason;
+    return stop === undefined || stop === null || stop === 'tool_use' || stop === 'pause_turn';
+  }
+  if (line.includes('"compact_boundary"')) {
+    return parse(line)?.type === 'system' ? false : undefined;
+  }
+  return undefined;
+}
+
+type UserLine = {
+  type?                     : unknown;
+  isMeta?                   : unknown;
+  isCompactSummary?         : unknown;
+  isVisibleInTranscriptOnly?: unknown;
+  message?                  : { content?: unknown };
+};
+
+/** A slash command run locally (`/compact`, `/model`…): no model turn behind it. */
+const LOCAL_COMMAND = /^\s*<(command-name|command-message|local-command-stdout|local-command-stderr|local-command-caveat)>/;
+/** What Claude Code writes when the user stops a turn with Esc. */
+const INTERRUPTED = '[Request interrupted by user';
+
+/** The prompt's text: the string itself, or the first text block of an array. */
+function firstText(content: unknown): string | undefined {
+  if (typeof content === 'string') { return content; }
+  if (!Array.isArray(content)) { return undefined; }
+  for (const block of content as { type?: unknown; text?: unknown }[]) {
+    if (block?.type === 'text' && typeof block.text === 'string') { return block.text; }
   }
   return undefined;
 }
