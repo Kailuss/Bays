@@ -14,6 +14,7 @@ channel; even ones are stable releases.
 - Group headers have the rounder corners of Atria and Railyard.
 - Group colours are the same eight hues Atria and Railyard mark a project with. Teal and pink are new, and purple is now violet.
 - The colour picker shows a swatch of each hue instead of an emoji.
+- The activity bar draws Bays's own icon instead of a borrowed codicon.
 
 ## [0.4.31] - 2026-10-16
 

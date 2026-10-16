@@ -54,7 +54,7 @@
         {
           "id": "baysContainer",
           "title": "%container.baysContainer%",
-          "icon": "$(collection)"
+          "icon": "media/activity-bar.svg"
         }
       ]
     },
