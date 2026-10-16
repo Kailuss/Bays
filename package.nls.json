@@ -4,7 +4,7 @@
   "command.openBay": "Open Bay",
   "command.closeBay": "Close Bay",
   "command.closeOthers": "Close Others",
-  "command.closeToRight": "Close to the Right",
+  "command.closeToRight": "Close Below",
   "command.closeAll": "Close All",
   "command.pinBay": "Pin Bay",
   "command.unpinBay": "Unpin Bay",

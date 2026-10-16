@@ -26,8 +26,9 @@ export abstract class BayActions {
     return actions.closeGroup(this.metadata, this.state);
   }
 
-  async closeToRight(): Promise<void> {
-    return actions.closeToRight(this.metadata, this.state);
+  /** Closes the given rows: the ones below this, as `utils/rowsBelow.ts` decides. */
+  async closeBelow(below: readonly BayActions[]): Promise<void> {
+    return actions.closeBelow(below);
   }
 
   //- PIN ACTIONS

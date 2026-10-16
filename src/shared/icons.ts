@@ -103,6 +103,11 @@ export const ICONS = {
     split        : 'split-horizontal',
     newWindow    : 'multiple-windows',
     chat         : 'attach',
+    // The Claude Code session orders.
+    rename       : 'edit',
+    unread       : 'mail',
+    sessionGroup : 'folder-library',
+    newChat      : 'add',
   },
 
   /** What a bay IS, where neither the icon theme nor an owning extension says it. */

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Bay } from '../../models/Bay';
 import { BayGroup } from '../../models/BayGroup';
 import { Logger }       from '../../platform/logger';
+import { rowsBelow }    from '../../utils/rowsBelow';
 import type { BayHierarchyService } from './BayHierarchyService';
 import type { GroupCustomizationService } from '../ui/GroupCustomizationService';
 
@@ -317,6 +318,13 @@ export class BayStateService {
 
   getGroup(id: number): BayGroup | undefined {
     return this.groups.get(id);
+  }
+
+  /** The rows drawn below this bay in its group, its own variants aside. */
+  baysBelow(bay: Bay): Bay[] {
+    const rows = this.groups.get(bay.state.groupId)?.bays ?? [];
+    const keyed = rows.map(b => ({ id: b.metadata.id, parentId: b.metadata.sourceBayId, bay: b }));
+    return rowsBelow(keyed, bay.metadata.id).map(r => r.bay);
   }
 
   // Sorted by column and never in insertion order: a list that read 1 3 2 4

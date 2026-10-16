@@ -4,7 +4,7 @@
   "command.openBay": "Abrir la bahía",
   "command.closeBay": "Cerrar la bahía",
   "command.closeOthers": "Cerrar las demás",
-  "command.closeToRight": "Cerrar las de la derecha",
+  "command.closeToRight": "Cerrar las de abajo",
   "command.closeAll": "Cerrar todas",
   "command.pinBay": "Anclar la bahía",
   "command.unpinBay": "Desanclar la bahía",

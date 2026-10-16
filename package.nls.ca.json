@@ -4,7 +4,7 @@
   "command.openBay": "Obre la dàrsena",
   "command.closeBay": "Tanca la dàrsena",
   "command.closeOthers": "Tanca les altres",
-  "command.closeToRight": "Tanca les de la dreta",
+  "command.closeToRight": "Tanca les de sota",
   "command.closeAll": "Tanca-ho tot",
   "command.pinBay": "Fixa la dàrsena",
   "command.unpinBay": "Desfixa la dàrsena",

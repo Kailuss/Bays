@@ -35,7 +35,7 @@ export function registerBayCommands(
 
     vscode.commands.registerCommand('bays.closeToRight', async (arg: unknown) => {
       const bay = resolve(arg);
-      if (bay) { await bay.closeToRight(); }
+      if (bay) { await bay.closeBelow(stateService.baysBelow(bay)); }
     }),
 
     vscode.commands.registerCommand('bays.closeAll', async () => {
