@@ -93,7 +93,7 @@
      stands at, and the accent that closes it on the edge that faces its rows. */
   --bays-header-height: 28px;
   --bays-card-gap: 6px;
-  --bays-card-radius: 6px;
+  --bays-card-radius: 3px;
   /* A SHADOW ring and not a border, which is the only way a fraction of a pixel
      survives: a border is laid out, and a laid-out width snaps to whole device
      pixels, so anything between 1 and 2 lands back on a hairline. A shadow is
