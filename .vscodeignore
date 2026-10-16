@@ -1,3 +1,6 @@
+# Every dot-folder stays out: editor tooling (.claude, .remember, ...) drops
+# its own here, and none of it has to ship.
+.*/**
 .vscode/**
 .github/**
 .git/**
