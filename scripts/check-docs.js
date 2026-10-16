@@ -126,77 +126,14 @@ function checkImages(scanned) {
 
 //= THE PUNCTUATION OF WHAT SHIPS
 
-/**
- * No dashes and no typographic quotes in what the marketplace renders.
- *
- * They read as machine text, which is exactly what a marketplace page cannot
- * look like.
- *
- * What this does NOT decide is the replacement. Each dash is swapped for what it
- * was really doing: a colon where what follows explains what came before,
- * parentheses around an aside, a comma for a short one, a full stop where there
- * were two ideas. That is a judgement per sentence, and a blind sweep to hyphens
- * leaves the prose worse than it found it — which is why this cuts instead of
- * fixing.
- */
-const SHIPPED = ['README.md', 'CHANGELOG.md'];
-
-/**
- * Chinese and Japanese keep their own punctuation: there `“”` are the native
- * quotes and `——` the standard dash, so replacing them with ASCII does not
- * depersonalize the translation, it writes it wrong.
- *
- * What IS corrected there is a LOOSE dash in the English manner (a single one,
- * or a spaced `——`), which is a calque of the source and not the typography of
- * the language.
- */
-const CJK = /\.(?:ja|zh-cn)\.json$/;
-
-/** The `…` of a UI label and the arrows stay: see the guide's punctuation rule. */
-const TYPOGRAPHIC = /[–‘’“”]/g;
-
-function offenders(line, cjk) {
-	const out = [];
-	for (const m of line.matchAll(TYPOGRAPHIC)) {
-		if (cjk && (m[0] === '“' || m[0] === '”')) { continue; }
-		out.push(m[0]);
-	}
-	for (const m of line.matchAll(/—+/g)) {
-		const spaced = line[m.index - 1] === ' ' || line[m.index + m[0].length] === ' ';
-		if (cjk && m[0] === '——' && !spaced) { continue; }
-		out.push(m[0]);
-	}
-	return out;
-}
+// No dashes and no typographic quotes in what the marketplace renders. The
+// rule, its exceptions (the `…` of a UI label, the arrows, native CJK
+// typography) and its reasons are the kit's, shared by every Lovervoid
+// extension so the copies cannot drift apart: scripts/lib/punctuation.js.
+const punctuation = require('./lib/punctuation');
 
 function checkPunctuation() {
-	const l10n  = path.join(ROOT, 'l10n');
-	const files = [
-		...SHIPPED,
-		...fs.readdirSync(ROOT).filter(name => /^package\.nls(\.[\w-]+)?\.json$/.test(name)),
-		...(fs.existsSync(l10n) ? fs.readdirSync(l10n).filter(n => n.endsWith('.json')).map(n => `l10n/${n}`) : []),
-	];
-
-	const bad = [];
-	for (const rel of files) {
-		const full = path.join(ROOT, rel);
-		if (!fs.existsSync(full)) { continue; }
-		const cjk = CJK.test(rel);
-		fs.readFileSync(full, 'utf8').split('\n').forEach((line, i) => {
-			for (const char of offenders(line, cjk)) {
-				bad.push(`  ${rel}:${i + 1}  ${char}`);
-			}
-		});
-	}
-
-	if (bad.length > 0) {
-		console.error(`[check-docs] ${bad.length} dash(es) or typographic quote(s) in what ships:\n`);
-		console.error(bad.join('\n'));
-		console.error('\nReplace each with what it was doing: a colon, parentheses, a comma, a full stop.');
-		process.exit(1);
-	}
-
-	return files.length;
+	return punctuation.checkPunctuation(ROOT);
 }
 
 function check() {

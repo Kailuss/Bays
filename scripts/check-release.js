@@ -1,6 +1,7 @@
+// @lovervoid/kit scripts/check-release.js: synced by `lovervoid sync`. Edit it in the kit, not here.
 // Asserts that the manifest and the changelog agree about what is being cut.
 //
-// The rule is in CLAUDE.md, under "Antes de empaquetar": a package meant to be
+// The rule is the house's, written in every repo's guide: a package meant to be
 // published carries a version that has never been published and a changelog
 // entry that names it. The two halves fail at opposite ends and neither one is
 // loud where it happens.

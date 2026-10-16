@@ -425,6 +425,13 @@
       }
     }
   },
+  "lovervoid": {
+    "kit": [
+      "release",
+      "check-release",
+      "punctuation"
+    ]
+  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && npm run test && npm run check-docs && npm run check-layers && node esbuild.js",

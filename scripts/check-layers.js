@@ -439,7 +439,10 @@ function checkCitedIdentifiers() {
 	// (`CSS_ORDER`, `buildTests`) y esos nombres se pudren igual que los de src/.
 	const buildScripts = [
 		path.join(ROOT, 'esbuild.js'),
-		...fs.readdirSync(path.join(ROOT, 'scripts')).map(n => path.join(ROOT, 'scripts', n)),
+		// Recursivo: los modulos compartidos del kit viven un nivel mas abajo (scripts/lib/).
+		...fs.readdirSync(path.join(ROOT, 'scripts'), { recursive: true })
+			.filter(n => n.endsWith('.js'))
+			.map(n => path.join(ROOT, 'scripts', n)),
 	].filter(fs.existsSync);
 
 	// El corpus va SIN COMENTARIOS, y no es higiene: un nombre que solo aparece
