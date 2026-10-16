@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, developer]
+    branches: [main, develop]
   pull_request:
-    branches: [main, developer]
+    branches: [main, develop]
 
 jobs:
   # La puerta de calidad: type-check de los DOS proyectos, lint, la suite pura y
