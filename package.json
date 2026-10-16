@@ -2,7 +2,7 @@
   "name": "bays",
   "displayName": "Bays (SideTabs)",
   "description": "%description%",
-  "version": "0.4.32",
+  "version": "0.4.33",
   "publisher": "Lovervoid",
   "license": "MIT",
   "icon": "icon.png",
@@ -63,8 +63,7 @@
         {
           "type": "webview",
           "id": "bays",
-          "name": "%view.bays.name%",
-          "icon": "$(collection)"
+          "name": "%view.bays.name%"
         }
       ]
     },
