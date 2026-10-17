@@ -95,3 +95,22 @@ test('sameShape: a webview retitling itself is still the same bay', () => {
 test('sameShape: a file bay whose label moved is a different bay', () => {
   assert.equal(sameShape(shape(), shape({ label: 'b.md' })), false);
 });
+
+test('orderGroup: a tab that REPLACED another takes its slot, not the end of the group', () => {
+  // The italic preview editor showed b, sitting between a and c; single-clicking
+  // another file swaps its content in place, so the native strip keeps it there.
+  const fresh = [
+    { id: 'a', nativeIndex: 0 },
+    { id: 'd', nativeIndex: 1, replaces: 'b' },
+    { id: 'c', nativeIndex: 2 },
+  ];
+  assert.deepEqual(orderGroup(fresh, known(['a', 'b', 'c'])), ['a', 'd', 'c']);
+});
+
+test('orderGroup: a replacement whose predecessor the panel never had goes to the end', () => {
+  const fresh = [
+    { id: 'd', nativeIndex: 0, replaces: 'ghost' },
+    { id: 'a', nativeIndex: 1 },
+  ];
+  assert.deepEqual(orderGroup(fresh, known(['a'])), ['a', 'd']);
+});

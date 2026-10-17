@@ -235,8 +235,19 @@ export class BaySyncService {
       group.isActive = native.isActive;
 
       const members = [...merged.values()].filter(m => m.bay.state.groupId === native.viewColumn);
+      // The italic preview editor is ONE native seat that swaps its file: the
+      // preview bay this group had and no longer has is what a new preview bay
+      // replaced, so it inherits that slot instead of going to the end.
+      const previousPreview = previousGroups
+        .find(g => g.viewColumn === native.viewColumn)?.bays
+        .find(b => b.state.isPreview && !merged.has(b.metadata.id))?.metadata.id;
       const order = orderGroup(
-        members.map(m => ({ id: m.bay.metadata.id, uriKey: m.bay.metadata.uri?.toString(), nativeIndex: m.nativeIndex })),
+        members.map(m => ({
+          id         : m.bay.metadata.id,
+          uriKey     : m.bay.metadata.uri?.toString(),
+          nativeIndex: m.nativeIndex,
+          replaces   : m.isNew && m.bay.state.isPreview ? previousPreview : undefined,
+        })),
         { byId, byUri },
       );
       group.bays = order.map(id => merged.get(id)!.bay);

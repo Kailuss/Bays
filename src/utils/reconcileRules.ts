@@ -25,6 +25,11 @@ export type OrderFacts = {
   id         : string;
   uriKey?    : string;
   nativeIndex: number;
+  /**
+   * The bay this one REPLACED in the same native seat: the italic preview editor
+   * swapping its file, which VS Code does in place. It takes that bay's slot.
+   */
+  replaces?  : string;
 };
 
 /**
@@ -35,6 +40,11 @@ export type OrderFacts = {
  * in the groups it renumbers, and the uri is what still says it is the same
  * file. Anything the panel never had goes after, in the order the native strip
  * gives it — which is where a newly opened tab has always landed here.
+ *
+ * Except a bay that REPLACED one: the italic preview editor reuses its tab for
+ * the next file, so the native strip keeps it where it was, and sending it to the
+ * end made every single click (a peek from Atria, the explorer) reshuffle the
+ * group. It is ranked with the id matches, at the slot of the bay it replaced.
  */
 export function orderGroup(fresh: readonly OrderFacts[], previous: PreviousOrder): string[] {
   // Id matches rank before uri matches before unknowns; inside each band the
@@ -43,6 +53,8 @@ export function orderGroup(fresh: readonly OrderFacts[], previous: PreviousOrder
   const rank = (bay: OrderFacts): [number, number] => {
     const byId = previous.byId.get(bay.id);
     if (byId !== undefined) { return [0, byId]; }
+    const replaced = bay.replaces === undefined ? undefined : previous.byId.get(bay.replaces);
+    if (replaced !== undefined) { return [0, replaced]; }
     const byUri = bay.uriKey === undefined ? undefined : previous.byUri.get(bay.uriKey);
     if (byUri !== undefined) { return [1, byUri]; }
     return [2, bay.nativeIndex];
