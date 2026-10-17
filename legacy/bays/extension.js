@@ -23,6 +23,7 @@ async function activate(context) {
   for (const key of context.workspaceState.keys()) {
     offered[key] = context.workspaceState.get(key);
   }
+  console.log(`[Bays] offering ${Object.keys(offered).length} stored keys to SideTabs`);
   try {
     await api.adoptBaysState(offered);
   } catch (error) {
