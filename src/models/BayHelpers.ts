@@ -139,8 +139,13 @@ export class BayHelpers {
           // never lands after the one the user clicked last.
           if (!isCurrent()) { return; }
           await BayHelpers.focusGroup(state.viewColumn);
-          if (nativeTab.isActive) { return; }
-          await BayHelpers.awaitWindowSwitch(before);
+          // `isActive` is NOT trusted to skip the command. A dynamic markdown
+          // preview that retitles to follow another file comes back from the Tab
+          // API as the active tab while the workbench is still showing the
+          // source, and returning here left its row answering every click with
+          // nothing. Opening an editor that is already in front is a no-op, so
+          // the only thing an active tab skips is the wait for another window.
+          if (!nativeTab.isActive) { await BayHelpers.awaitWindowSwitch(before); }
           if (!isCurrent()) { return; }
           await vscode.commands.executeCommand(VSCODE_COMMANDS.OPEN_EDITOR_AT_INDEX, tabIndex);
           if (!nativeTab.isActive) {
