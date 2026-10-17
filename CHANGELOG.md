@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.35] - 2026-10-17
+
+### Fixed
+
+- A bay opened in the italic preview editor keeps its place instead of jumping to the end of its group.
+- The markdown preview row opens the preview again after it follows another file.
+
 ## [0.4.34] - 2026-10-16
 
 ### Changed
