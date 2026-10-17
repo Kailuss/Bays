@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.36] - 2026-10-17
+
+### Changed
+
+- Bays now ships as `Lovervoid.sidetabs`, the listing it started as. Settings keep the `bays.` prefix and work as before.
+
+### Added
+
+- Group names, colours, locks and view preferences stored by `Lovervoid.bays` are taken over in each workspace the first time both run.
+
 ## [0.4.35] - 2026-10-17
 
 ### Fixed
