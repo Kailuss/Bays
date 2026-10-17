@@ -66,6 +66,18 @@ export class ViewPrefs {
     this._onDidChange.fire(key);
   }
 
+  /**
+   * Vuelve a leer el almacén y avisa de cada clave que se ha movido. Lo pide el
+   * traspaso desde `Lovervoid.bays`, que escribe después del constructor.
+   */
+  reload(): void {
+    const before = Object.fromEntries((Object.keys(VIEW_PREFS) as ViewPrefKey[]).map(key => [key, this.get(key)]));
+    this.stored = { ...this.context.workspaceState.get<Partial<Record<ViewPrefKey, boolean>>>(STORE_KEY, {}) };
+    for (const key of Object.keys(VIEW_PREFS) as ViewPrefKey[]) {
+      if (this.get(key) !== before[key]) { this._onDidChange.fire(key); }
+    }
+  }
+
   async toggle(key: ViewPrefKey): Promise<void> {
     await this.set(key, !this.get(key));
   }

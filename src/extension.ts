@@ -20,9 +20,10 @@ import { registerCopilotCommands } from './commands/copilotCommands';
 import { activateLanguageRegistry } from './platform/languageRegistry';
 import { preloadWebviewExtensionIcons } from './platform/webviewExtensionIcons';
 import { Logger                  } from './platform/logger';
+import { createSideTabsApi, SideTabsApi } from './platform/baysHandoff';
 import { TIMINGS }                from './constants/timings';
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<SideTabsApi> {
   Logger.initialize();
   Logger.log('Activating Editor Bays…');
 
@@ -226,6 +227,15 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     Logger.log('Editor Bays activated successfully');
+
+    // Publicada bajo el id de sidetabs: lo que un usuario de Bays guardó vive en
+    // el `workspaceState` de `Lovervoid.bays`, y la carcasa de esa extensión lo
+    // entrega aquí. Los dos almacenes ya lo leyeron, así que se releen.
+    return createSideTabsApi(context, () => {
+      groupCustomization.reload();
+      stateService.refreshGroupCustomizations();
+      viewPrefs.reload();
+    });
   } catch (error) {
     Logger.error('Activation failed', error);
     throw error;

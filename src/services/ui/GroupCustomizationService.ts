@@ -26,15 +26,29 @@ export class GroupCustomizationService {
   private data: Record<string, GroupCustomization>;
 
   constructor(private readonly context: vscode.ExtensionContext) {
-    this.data = { ...context.workspaceState.get<Record<string, GroupCustomization>>(STORAGE_KEY, {}) };
+    this.data = this.load();
+  }
+
+  /**
+   * Vuelve a leer el almacén. Lo pide el traspaso desde `Lovervoid.bays`, que
+   * escribe en el `workspaceState` DESPUÉS de que el constructor lo haya leído
+   * (la carcasa depende de esta extensión, así que activa detrás de ella).
+   */
+  reload(): void {
+    this.data = this.load();
+  }
+
+  private load(): Record<string, GroupCustomization> {
+    const data = { ...this.context.workspaceState.get<Record<string, GroupCustomization>>(STORAGE_KEY, {}) };
     // Lo guardado puede ser de la paleta anterior: un `purple` se lee como su
     // heredero, y un nombre que ya no existe vuelve al color automático en vez
     // de viajar al cliente como un color que no sabe dibujar. Se normaliza en
     // memoria y se escribe con la siguiente elección, no aquí.
-    for (const [key, custom] of Object.entries(this.data)) {
+    for (const [key, custom] of Object.entries(data)) {
       if (custom.color === undefined) { continue; }
-      this.data[key] = { ...custom, color: parseGroupColor(custom.color) };
+      data[key] = { ...custom, color: parseGroupColor(custom.color) };
     }
+    return data;
   }
 
   get(groupId: number): GroupCustomization | undefined {
