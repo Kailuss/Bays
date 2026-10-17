@@ -64,7 +64,8 @@ razones.
 | `displayName`, o sea el título del marketplace | **Bays (SideTabs)** |
 | Todo lo que se lee DENTRO de la ventana: la barra de actividad, la vista, la sección de ajustes, la categoría de los comandos y el canal de salida | **Editors** |
 | Cada FILA de la lista | una **bay** (*Close Bay*, *Pin Bay*, *Reorder Bays*) |
-| `name`, `publisher`, el prefijo `bays.`, ids y claves guardadas | **sin tocar** |
+| `name` | **`sidetabs`**, el id de la ficha que tiene las instalaciones (ver *El id es el de SideTabs*) |
+| `publisher`, el prefijo `bays.`, ids de comandos y vistas, y claves guardadas | **sin tocar** |
 
 - **La barra de actividad es una fila de NOMBRES COMUNES** —Explorer, Search,
   Source Control— y un nombre propio ahí sobresale como un anuncio. *Editors* es
@@ -84,13 +85,46 @@ razones.
   bay es el hueco donde se aparca un editor. Renombrarla a *editor* dejaría
   `Editors: Close Editor` letra por letra igual que el `View: Close Editor` del
   workbench en la paleta.
-- **El renombrado no movió NADA guardado**: `name` sigue siendo `bays`, así que
-  el id, la URL, las instalaciones y `@ext:Lovervoid.bays` son los de siempre.
-  El almacén de la extensión va indexado por ese id, y moverlo habría
-  perdido grupos, colores y orden en todas las ventanas.
 - **Los textos de `capabilities.*` dicen «la extensión»** y no un nombre: son
   el único sitio donde el manifiesto habla de sí mismo en prosa, y ahí los dos
   nombres estarían igual de fuera de sitio.
+
+### El id es el de SideTabs
+
+**Bays se publica como `Lovervoid.sidetabs`** ([#13](https://trello.com/c/1O6v4ciZ)),
+la ficha de la que salió. El 2026-10-17 aquélla tenía 1.671 instalaciones y
+`Lovervoid.bays` 75: SideTabs 0.4.2 llevaba tiempo anunciando que ahora era Bays
+y casi nadie había pasado. Un aviso no migra a nadie; una actualización
+automática sí, y el Marketplace no fusiona contadores entre ids.
+
+- **Mover un `name` crea OTRA extensión**, y aquí es exactamente lo que se
+  quería: la de las instalaciones. Es la única vez que se mueve, y la regla de
+  no tocarlo vuelve a valer desde aquí con `sidetabs`.
+- **El prefijo `bays.` NO se movió**, y es lo que hace barato el cambio: los
+  ajustes, los comandos y la vista no dependen del `name`, así que la
+  configuración de un usuario de Bays sigue leyéndose tal cual. Los ajustes
+  `sidetabs.*` de la SideTabs antigua (`fontSize`, `tabHeight`…) no tienen
+  equivalente y se ignoran.
+- **Lo que SÍ cuelga del id es el `workspaceState`**: los grupos (nombre, color,
+  bloqueo) y los `ViewPrefs`. Lo trae la CARCASA de `legacy/bays/`, la última
+  `Lovervoid.bays`:
+  - no contribuye nada, así que nunca hay dos extensiones con los mismos ids
+    de comando o vista;
+  - declara `extensionDependencies: ["Lovervoid.sidetabs"]`, que es lo que
+    instala la nueva al actualizar;
+  - y EMPUJA su `workspaceState` a la API que devuelve `activate`
+    (`platform/baysHandoff.ts`). Empuja y no se le tira: VS Code activa primero
+    la dependencia, así que un `activate` de sidetabs que esperara a la carcasa
+    esperaría a algo que le está esperando a él.
+  - Qué se adopta lo decide `utils/handoffRules.ts` (puro, con tests): solo
+    claves `bays.`, solo las que faltan, y una vez por workspace
+    (`bays.handoffAdopted`). Los dos almacenes ya se han leído para entonces,
+    así que se releen (`reload`).
+- **Orden de publicación: la carcasa PRIMERO.** Libera el título *Bays
+  (SideTabs)* —es único entre fichas y lo tenía `bays`— y mientras tanto sus
+  usuarios reciben la SideTabs vieja, cuyos ids son `sidetabs.*` y no chocan
+  con nada. La carcasa se empaqueta desde su carpeta (`vsce package
+  --allow-missing-repository`) y está fuera del `.vsix` de sidetabs.
 
 ## Cómo contestar en el chat
 

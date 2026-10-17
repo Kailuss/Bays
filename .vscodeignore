@@ -29,3 +29,7 @@ CLAUDE.md
 # Los .vsix de builds anteriores viven en la raiz; vsce empaqueta el DIRECTORIO.
 *.vsix
 
+
+# The last Lovervoid.bays release (a shell that hands its state over) is
+# packaged on its own from its folder.
+legacy/**

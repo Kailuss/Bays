@@ -85,7 +85,7 @@ Click the **Editors** icon in the Activity Bar.
 
 Your open editors are already in it. There is nothing to configure.
 
-Settings use the `bays.` prefix: filter for `@ext:Lovervoid.bays`.
+Settings use the `bays.` prefix: filter for `@ext:Lovervoid.sidetabs`.
 
 Requires VS Code **1.85** or later.
 

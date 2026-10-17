@@ -1,0 +1,30 @@
+{
+  "name": "bays",
+  "displayName": "Bays (moved to SideTabs)",
+  "description": "Bays now ships as Lovervoid.sidetabs. This last release installs it and hands over your groups and view preferences.",
+  "version": "0.4.36",
+  "publisher": "Lovervoid",
+  "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1F2430",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "extensionDependencies": [
+    "Lovervoid.sidetabs"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": true },
+    "virtualWorkspaces": true
+  }
+}
