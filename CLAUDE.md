@@ -294,20 +294,24 @@ extension host.
 
 ### Cuando pido «dale salida»
 
-**«Darle salida» —o «sácalo», o «ciérralo»— significa CERRAR la versión, y son
-cuatro pasos en este orden**: subir `version` en `package.json`, escribir su
-entrada en CHANGELOG.md, commitear todo lo que quede suelto, y construir el
-paquete con `npm run vsix`. Lo que se entrega al final es la RUTA del `.vsix`,
-que es lo que de verdad se ha pedido.
+**«Darle salida» —o «sácalo», o «ciérralo»— significa CERRAR la versión y
+PUBLICARLA, y son cinco pasos en este orden**: subir `version` en
+`package.json`, escribir su entrada en CHANGELOG.md, commitear todo lo que quede
+suelto, construir el paquete con `npm run vsix` y publicarlo con
+`npm run release`.
 
-No es una pregunta: dicho eso, se hacen los cuatro sin volver a preguntar por
-ninguno. Qué número toca y qué forma tiene la entrada lo dicen las dos secciones
+No es una pregunta: dicho eso, los cuatro primeros se hacen sin volver a
+preguntar por ninguno. Qué número toca y qué forma tiene la entrada lo dicen las dos secciones
 que siguen; los commits van con su gitmoji y se parten por lo que cambia cada
 uno, nunca en uno solo que diga «cambios».
 
-**Lo que NO incluye es publicar.** `npm run release` sube al marketplace y una
-versión no se despublica, así que la salida acaba en un fichero en el disco y
-quien lo sube es él.
+**El quinto SÍ espera un «sí».** Antes de `npm run release` se enseñan la
+versión y el canal tal como los deriva `release.js` (p. ej. `0.18.32, stable` o
+`0.19.1, pre-release`) y se espera un «sí» explícito: una versión no se
+despublica, y una palabra de confirmación es lo que caza un canal equivocado.
+Publica en el Marketplace de Microsoft; Open VSX necesitaría `ovsx` y su token,
+que no están. Sin «sí», o si la subida falla, lo que se entrega es la RUTA del
+`.vsix` y el porqué.
 
 ### Antes de empaquetar: la versión y el changelog
 
