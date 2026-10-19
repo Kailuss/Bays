@@ -242,7 +242,7 @@ de EBADENGINE por dependencias que el propio `package.json` da por satisfechas.
 ### Dos suites de tests, y el corte es el asunto
 
 - **`src/test/` es PURA**: no importa `vscode`, esbuild la bundlea y `node --test`
-  la corre en unos 150 ms, así que corre mientras trabajas. Son 198 casos sobre
+  la corre en unos 150 ms, así que corre mientras trabajas. Son 204 casos sobre
   los módulos de `src/utils/` y `src/shared/`.
 - **`src/test-integration/` es lo que solo se puede afirmar DENTRO de un VS Code
   real** —las clases `TabInput*`, la activación, los comandos registrados— y paga
@@ -1520,7 +1520,7 @@ guion largo es `——`— que hay que escribir sabiendo.
 
 ## Los ajustes, los comandos y las claves de contexto
 
-**Siete ajustes**, y ninguno más (los `bays.tabHeight`, `bays.iconSize`,
+**Diez ajustes**, y ninguno más (los `bays.tabHeight`, `bays.iconSize`,
 `bays.enableStateIndicators` y `bays.showStateIcons` de la documentación vieja no
 existieron nunca):
 
@@ -1533,6 +1533,9 @@ existieron nunca):
 | `bays.syncCursorPosition` | `false` | sincronizar el cursor entre una bay y sus variantes |
 | `bays.animations` | `true` | el interruptor maestro de todo lo que la vista mueve |
 | `bays.followProductIconTheme` | `true` | seguir el pack de iconos de producto del entorno |
+| `bays.paths.separator` | `›` | el signo entre dos carpetas de la ruta de una fila (`\` · `/` · `›` · `•`); con Atria instalada manda `navigator.paths.separator` (ver *Lo que se comparte con Atria*) |
+| `bays.paths.separatorSpaced` | `true` | un espacio a cada lado de ese signo; mismo trato con Atria |
+| `bays.trace` | `false` | la traza de `Logger.log` en el canal `Editors`; `warn` y `error` se escriben siempre |
 
 **Los dos que la vista CONMUTA se guardan por proyecto** y no en el settings.json
 del usuario (`services/ui/ViewPrefs.ts`, en `workspaceState`): `compactMode` y
