@@ -24,6 +24,20 @@ declare global {
 
 /** El `vscode.l10n.t` del cliente: consulta al bundle y luego interpolación. */
 export function t(message: string, ...args: Array<string | number>): string {
-  const translated = window.__l10n?.[message] ?? message;
-  return interpolate(translated, ...args);
+  return interpolate(lookup(message), ...args);
+}
+
+/**
+ * La cadena PROPIA del bundle para un mensaje, o el mensaje tal cual. Nunca un
+ * índice pelado: el bundle es un objeto plano, así que un mensaje que nombre
+ * algo de su prototipo (`constructor`, `toString`) volvería como una FUNCIÓN y
+ * la interpolación lanzaría, al importarse si la etiqueta vive en una tabla de
+ * nivel de módulo. En inglés el bundle es `{}`, que es justo donde toda consulta
+ * así cae al prototipo.
+ */
+function lookup(message: string): string {
+  const bundle = window.__l10n;
+  if (!bundle || !Object.prototype.hasOwnProperty.call(bundle, message)) { return message; }
+  const translated = bundle[message];
+  return typeof translated === 'string' ? translated : message;
 }

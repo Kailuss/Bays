@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 Odd minor versions (0.5, 0.3, …) ship on the marketplace's **pre-release**
 channel; even ones are stable releases.
 
+## [0.4.37] - 2026-10-21
+
+### Fixed
+
+- A label whose English text is also a built-in name of an object, such as constructor, no longer stops the view from loading.
+
 ## [0.4.36] - 2026-10-17
 
 ### Changed
